@@ -1,0 +1,19 @@
+John Doe
+Software Engineer
+
+EXPERIENCE
+Software Developer | ABC Company | 2020-Present
+- Developed web applications using React and Node.js
+- Collaborated with cross-functional teams to deliver projects on time
+- Improved application performance by 30% through optimization
+
+Junior Developer | XYZ Corp | 2018-2020
+- Assisted in maintaining legacy systems
+- Wrote unit tests for backend services
+- Participated in code reviews
+
+EDUCATION
+B.S. Computer Science | University of Technology | 2018
+
+SKILLS
+JavaScript, React, Node.js, SQL, Git, Agile

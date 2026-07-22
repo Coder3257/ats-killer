@@ -1,0 +1,9 @@
+*.zip
+*.tar
+*.gz
+node_modules/
+dist/
+scratch/
+.git/
+verify_rls_security.js
+*.bak.*

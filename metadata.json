@@ -1,0 +1,6 @@
+{
+  "name": "ATS Killer",
+  "description": "An AI-powered resume analyzer that helps job seekers beat ATS filters, match keywords, and land more interviews.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,27 @@
+Senior Software Engineer
+
+We are looking for a skilled Software Engineer to join our team. The ideal candidate will have experience with:
+
+- React and modern JavaScript frameworks
+- Node.js and backend development
+- SQL databases and data modeling
+- Git version control
+- Agile development methodologies
+
+Responsibilities:
+- Design and develop scalable web applications
+- Collaborate with product and design teams
+- Mentor junior developers
+- Participate in code reviews and technical discussions
+
+Requirements:
+- 3+ years of experience in software development
+- Proficiency in JavaScript and React
+- Experience with Node.js and Express
+- Strong problem-solving skills
+- Bachelor's degree in Computer Science or related field
+
+Nice to have:
+- Experience with AWS or cloud platforms
+- Knowledge of TypeScript
+- Familiarity with Docker and Kubernetes

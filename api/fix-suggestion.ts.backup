@@ -1,0 +1,266 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { verifyAuth, rateLimit, getSupabaseAdmin } from "./_utils.js";
+import * as Sentry from "@sentry/node";
+import { scrubPii } from "../sentry-utils";
+
+Sentry.init({ dsn: process.env.SENTRY_DSN, beforeSend: scrubPii });
+
+export const config = {
+  runtime: "nodejs",
+};
+
+type NvidiaChatResponse = {
+  choices?: Array<{
+    message?: {
+      content?: string;
+      reasoning?: string;
+      reasoning_content?: string;
+      final?: string;
+      text?: string;
+    };
+  }>;
+};
+
+type NvidiaFixResponse = {
+  ok: boolean;
+  suggestion?: string;
+  error?: string;
+};
+
+function extractFinalFromMessage(data: NvidiaChatResponse): string {
+  const msg = data.choices?.[0]?.message;
+  if (!msg) return "";
+
+  // Prefer "content" if present, otherwise try other common fields.
+  const candidates = [
+    msg.content,
+    msg.final,
+    msg.text,
+  ]
+    .map((s) => (typeof s === "string" ? s.trim() : ""))
+    .filter(Boolean);
+
+  return candidates[0] || "";
+}
+
+function sanitizeLeakedOutput(raw: string): string {
+  const cleaned = (raw || "").replace(/\r\n/g, "\n").trim();
+  if (!cleaned) return cleaned;
+
+  // Split into blocks separated by blank lines and keep the last likely "answer" block.
+  const blocks = cleaned
+    .split(/\n{2,}/g)
+    .map((b) => b.trim())
+    .filter(Boolean);
+
+  let candidate = blocks.length ? blocks[blocks.length - 1] : cleaned;
+
+  // Strip common labels / quotes
+  candidate = candidate
+    .replace(/^["']+/, "")
+    .replace(/["']+$/, "")
+    .replace(/^(answer|final|rewritten)\s*[:\-]\s*/i, "")
+    .trim();
+
+  // If still looks like it contains meta reasoning, keep only the last non-empty line
+  const lower = candidate.toLowerCase();
+  const metaMarkers = [
+    "we need to",
+    "let me think",
+    "chain-of-thought",
+    "step-by-step",
+    "reasoning",
+    "analysis",
+    "however,",
+    "therefore,",
+    "in conclusion",
+  ];
+
+  if (metaMarkers.some((m) => lower.includes(m))) {
+    const lines = candidate.split("\n").map((l) => l.trim()).filter(Boolean);
+    if (lines.length) candidate = lines[lines.length - 1];
+  }
+
+  return candidate.trim();
+}
+
+async function callNvidiaNim({
+  apiKey,
+  model,
+  prompt,
+}: {
+  apiKey: string;
+  model: string;
+  prompt: string;
+}): Promise<NvidiaFixResponse> {
+  const response = await fetch("https://integrate.api.nvidia.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert resume writer and ATS optimizer. Follow the user's instructions precisely. Output ONLY the final rewritten resume text; do not include reasoning.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.2,
+      max_tokens: 500,
+    }),
+  });
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      error: `NVIDIA NIM request failed with status ${response.status} for model "${model}"`,
+    };
+  }
+
+  const data = (await response.json()) as NvidiaChatResponse;
+  const suggestion = extractFinalFromMessage(data);
+
+  if (!suggestion) {
+    return { ok: false, error: `AI service returned an empty response for model "${model}".` };
+  }
+
+  return { ok: true, suggestion };
+}
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  try {
+    const userId = await verifyAuth(req, res);
+    if (!userId) return;
+
+    if (await rateLimit(userId, res, req)) return;
+
+    const adminClient = getSupabaseAdmin();
+    if (!adminClient) {
+      return res.status(500).json({ error: "Database admin client is not configured on the server." });
+    }
+
+    const { issueText, resumeSection, jdContext } = req.body || {};
+
+    if (!issueText || !resumeSection) {
+      return res.status(400).json({ error: "Missing required fields: issueText and resumeSection" });
+    }
+
+    const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
+    if (!NVIDIA_API_KEY) {
+      console.log("[fix-suggestion] NVIDIA_API_KEY present:", !!process.env.NVIDIA_API_KEY);
+      return res.status(500).json({ error: "NVIDIA API key is not configured on the server." });
+    }
+
+    // Temporary debug: confirm env var presence (do not log the value itself).
+    console.log("[fix-suggestion] Key present:", !!process.env.NVIDIA_API_KEY);
+
+    const prompt = `
+You are an expert resume writer and ATS optimizer. Your task is to rewrite a specific resume section to address a specific issue identified by an ATS analysis.
+
+Issue to fix: "${issueText}"
+
+Job Description Context:
+${jdContext}
+
+Current Resume Section:
+${resumeSection}
+
+Instructions:
+1. Rewrite ONLY the provided resume section to directly address the issue described.
+2. Keep the rewrite concise, impactful, and tailored to the job description.
+3. Maintain truthfulness - do not invent false experience or skills.
+4. Focus on fixing the specific issue mentioned (e.g., if issue is "unclear timeframe", add clear dates; if issue is "missing keywords", incorporate relevant terms from the JD).
+5. Return ONLY the rewritten resume section text, with no additional commentary, explanation, or formatting.
+6. If the issue cannot be addressed by rewriting this section (e.g., it's about missing sections entirely), return the original section unchanged.
+
+Rewritten section:
+`;
+
+    // Model selection:
+    // NVIDIA model IDs can vary by account/entitlements, so try an ordered list.
+    const modelCandidates = [
+      // Confirmed valid primary model
+      "moonshotai/kimi-k2.6",
+      // Replacement fallback (confirmed present in /v1/models list)
+      "nvidia/nemotron-3-super-120b-a12b",
+      // Keep a couple extra candidates (order matters)
+      "moonshotai/kimi-k2.6-pro",
+      "deepseek-ai/deepseek-v3",
+    ];
+
+    let lastError: string | null = null;
+
+    for (const model of modelCandidates) {
+      console.log(`[fix-suggestion] Trying NVIDIA model: ${model}`);
+
+      const attempt = await callNvidiaNim({
+        apiKey: NVIDIA_API_KEY,
+        model,
+        prompt,
+      });
+
+      if (attempt.ok && attempt.suggestion) {
+        console.log(`[fix-suggestion] NVIDIA model success: ${model}`);
+        // Sanitizer: strip leaked chain-of-thought / meta-reasoning if present.
+        const cleaned = attempt.suggestion
+          .replace(/\r\n/g, "\n")
+          .trim();
+
+        const reasoningMarkers = [
+          "we need to",
+          "let me think",
+          "thinking",
+          "analysis",
+          "deliberation",
+          "reasoning",
+          "here's how",
+          "step-by-step",
+        ];
+
+        const hasMarkers = reasoningMarkers.some((m) =>
+          cleaned.toLowerCase().includes(m)
+        );
+
+        let finalText = cleaned;
+
+        if (hasMarkers) {
+          // Heuristic: keep the last non-empty block (often the actual final rewrite).
+          const blocks = cleaned
+            .split(/\n{2,}/g)
+            .map((b) => b.trim())
+            .filter(Boolean);
+
+          if (blocks.length > 0) {
+            finalText = blocks[blocks.length - 1];
+          }
+
+          // Also strip any leading labels like "Rewritten section:".
+          finalText = finalText.replace(/^Rewritten\s*(resume)?\s*(section)?\s*:\s*/i, "");
+          finalText = finalText.trim();
+        }
+
+        return res.status(200).json({ suggestion: finalText });
+      }
+
+      lastError = attempt.error || "Unknown NVIDIA error";
+      console.warn(`[fix-suggestion] NVIDIA model failed: ${model}. Error: ${lastError}`);
+    }
+
+    console.error("NVIDIA fix-suggestion failed (all models):", lastError);
+
+    return res.status(500).json({
+      error: "Failed to generate fix suggestion from AI service.",
+      attemptedModels: modelCandidates,
+      lastError: lastError || undefined,
+    });
+  } catch (err: any) {
+    console.error("Error in fix-suggestion API:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
