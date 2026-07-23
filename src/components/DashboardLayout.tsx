@@ -669,6 +669,7 @@ export default function DashboardLayout({ onLogout }: DashboardLayoutProps) {
                   onSubmit={async (e) => {
                     e.preventDefault();
                     if (!user?.id) return;
+                    console.log("Profile Settings submit triggered:", { profileName, profileAvatar });
                     setUpdatingProfile(true);
                     try {
                       await UserRepository.updateProfile(user.id, {
@@ -676,8 +677,13 @@ export default function DashboardLayout({ onLogout }: DashboardLayoutProps) {
                         avatar_url: profileAvatar,
                       });
                       await refreshProfile();
-                      showToast("Profile details updated successfully!", "success");
+                      showToast("Profile details updated successfully! Reloading page...", "success");
+                      // Delay reload slightly to let user read toast
+                      setTimeout(() => {
+                        window.location.reload();
+                      }, 1000);
                     } catch (err: any) {
+                      console.error("Profile Settings save caught error:", err);
                       showToast(err.message || "Failed to update profile", "error");
                     } finally {
                       setUpdatingProfile(false);

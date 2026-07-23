@@ -22,6 +22,9 @@ create policy "Allow public read access to profiles" on public.profiles
 create policy "Allow users to update their own profile" on public.profiles
   for update using (auth.uid() = id);
 
+create policy "Allow users to insert their own profile" on public.profiles
+  for insert with check (auth.uid() = id);
+
 -- 2. RESUMES Table
 create table public.resumes (
   id uuid default uuid_generate_v4() primary key,

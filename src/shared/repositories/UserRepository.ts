@@ -59,14 +59,19 @@ export class UserRepository {
       return;
     }
 
+    console.log("UserRepository.updateProfile starting:", { userId, data });
     const { error } = await supabase
       .from("profiles")
-      .update({
+      .upsert({
+        id: userId,
         full_name: data.full_name,
         avatar_url: data.avatar_url,
-      })
-      .eq("id", userId);
+      });
 
-    if (error) throw error;
+    if (error) {
+      console.error("UserRepository.updateProfile failed:", error);
+      throw error;
+    }
+    console.log("UserRepository.updateProfile completed successfully.");
   }
 }
