@@ -23,7 +23,7 @@ export class UserRepository {
 
     const { data: profile, error } = await supabase
       .from("profiles")
-      .select("full_name, avatar_url, lifetime_access")
+      .select("full_name, avatar_url")
       .eq("id", userId)
       .single();
 
@@ -49,7 +49,7 @@ export class UserRepository {
       full_name: profile?.full_name || "",
       avatar_url: profile?.avatar_url || "",
       credits: credits?.amount || 0,
-      lifetime_access: !!profile?.lifetime_access || hasActiveSub,
+      lifetime_access: hasActiveSub,
     };
   }
 

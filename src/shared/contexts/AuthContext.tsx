@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data: profileData, error: profileErr } = await supabase
         .from("profiles")
-        .select("full_name, avatar_url, lifetime_access")
+        .select("full_name, avatar_url")
         .eq("id", userId)
         .single();
 
@@ -63,7 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         full_name: profileData?.full_name || "",
         avatar_url: profileData?.avatar_url || "",
         credits: creditsData?.amount || 0,
-        lifetime_access: !!profileData?.lifetime_access || hasActiveSub,
+        lifetime_access: hasActiveSub,
       });
     } catch (e: any) {
       // Fallback
