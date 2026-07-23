@@ -24,7 +24,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     process.env.SUPABASE_DB_PASSWORD || "",
     process.env.SUPABASE_SERVICE_ROLE_KEY || "",
     "***REMOVED***",
-    "***REMOVED***",
     "postgres",
     "***REMOVED***"
   ].filter(Boolean);
