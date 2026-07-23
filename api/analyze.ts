@@ -5,7 +5,7 @@ import { AnalysisResultSchema } from "./_schemas/analysisSchema.js";
 import { verifyAuth, rateLimit, getSupabaseAdmin } from "./_utils.js";
 import { recalculateGamification } from "./_gamification.js";
 import * as Sentry from "@sentry/node";
-import { scrubPii } from "../sentry-utils";
+import { scrubPii } from "../sentry-utils.js";
 import crypto from "crypto";
 
 Sentry.init({ dsn: process.env.SENTRY_DSN, beforeSend: scrubPii });

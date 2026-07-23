@@ -4,7 +4,7 @@ import { getJobMatchingPrompt } from "./_prompts/job-matching.js";
 import { JobMatchResultSchema } from "./_schemas/jobMatchSchema.js";
 import { verifyAuth, rateLimit, getSupabaseAdmin } from "./_utils.js";
 import * as Sentry from "@sentry/node";
-import { scrubPii } from "../sentry-utils";
+import { scrubPii } from "../sentry-utils.js";
 
 Sentry.init({ dsn: process.env.SENTRY_DSN, beforeSend: scrubPii });
 

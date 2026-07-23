@@ -3,7 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import { getCopilotChatPrompt } from "./_prompts/copilot-chat.js";
 import { verifyAuth, rateLimit, getSupabaseAdmin } from "./_utils.js";
 import * as Sentry from "@sentry/node";
-import { scrubPii } from "../sentry-utils";
+import { scrubPii } from "../sentry-utils.js";
 
 Sentry.init({ dsn: process.env.SENTRY_DSN, beforeSend: scrubPii });
 

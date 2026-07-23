@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import * as Sentry from "@sentry/node";
-import { scrubPii } from "../sentry-utils";
+import { scrubPii } from "../sentry-utils.js";
 
 Sentry.init({ dsn: process.env.SENTRY_DSN, beforeSend: scrubPii });
 
