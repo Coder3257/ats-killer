@@ -21,29 +21,13 @@ export class UserRepository {
       };
     }
 
-    let profile: any = null;
-    const profileRes = await supabase
+    const { data: profile, error } = await supabase
       .from("profiles")
-      .select("full_name, avatar_url, lifetime_access")
+      .select("full_name, avatar_url")
       .eq("id", userId)
       .single();
 
-    if (profileRes.error) {
-      if (profileRes.error.code === "42703") {
-        console.warn("lifetime_access column is missing from profiles table, retrying without it");
-        const retryRes = await supabase
-          .from("profiles")
-          .select("full_name, avatar_url")
-          .eq("id", userId)
-          .single();
-        if (retryRes.error) throw retryRes.error;
-        profile = { ...retryRes.data, lifetime_access: false };
-      } else {
-        throw profileRes.error;
-      }
-    } else {
-      profile = profileRes.data;
-    }
+    if (error) throw error;
 
     const { data: subscription } = await supabase
       .from("subscriptions")
@@ -57,9 +41,8 @@ export class UserRepository {
       .eq("user_id", userId)
       .single();
 
-    const hasActiveSub = (subscription?.status === "active" && 
-      new Date(subscription.current_period_end) > new Date()) ||
-      profile?.lifetime_access === true;
+    const hasActiveSub = subscription?.status === "active" && 
+      new Date(subscription.current_period_end) > new Date();
 
     return {
       id: userId,
