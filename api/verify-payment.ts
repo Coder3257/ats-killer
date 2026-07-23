@@ -27,7 +27,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: "Razorpay key secret is not configured on the server." });
     }
 
-    // 1. Signature Verification
     const text = `${razorpay_order_id}|${razorpay_payment_id}`;
     const generatedSignature = crypto
       .createHmac("sha256", razorpayKeySecret)
@@ -39,89 +38,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "Payment verification failed: invalid signature" });
     }
 
-    // 2. Database Update
     const adminClient = getSupabaseAdmin();
     if (!adminClient) {
       return res.status(500).json({ error: "Server database connection misconfigured." });
     }
 
-    // A. Idempotency Check: check if payment already processed
-    const { data: existingPayment } = await adminClient
-      .from("payments")
-      .select("razorpay_payment_id")
-      .eq("razorpay_payment_id", razorpay_payment_id)
-      .maybeSingle();
+    const { data: rpcResult, error: rpcErr } = await adminClient.rpc("provision_access", {
+      p_user_id: userId,
+      p_payment_id: razorpay_payment_id,
+      p_plan_name: planName,
+      p_price_id: planName === "Pro" ? "pro_monthly" : null,
+      p_period_days: 30,
+    });
 
-    if (existingPayment) {
-      return res.status(200).json({ success: true, message: "Payment already processed and provisioned." });
-    }
-
-    // B. Record the payment to ensure idempotency
-    const { error: insertPayErr } = await adminClient
-      .from("payments")
-      .insert({
-        razorpay_payment_id: razorpay_payment_id,
-        user_id: userId,
-        status: "verified",
+    if (rpcErr) {
+      Sentry.withScope((scope) => {
+        scope.setContext("payment_info", {
+          user_id: userId,
+          plan: planName,
+          razorpay_payment_id: razorpay_payment_id,
+        });
+        Sentry.captureException(rpcErr);
       });
-
-    if (insertPayErr) {
-      if (insertPayErr.code === "23505") {
-        return res.status(200).json({ success: true, message: "Payment already processed concurrently." });
-      }
-      throw insertPayErr;
+      await Sentry.flush(2000);
+      console.error("Database provisioning failed:", rpcErr);
+      return res.status(500).json({ error: "Database provisioning failed: " + rpcErr.message });
     }
 
-    // C. Provision Access
-    if (planName === "Pro") {
-      // Upsert user subscription
-      const { data: existingSub } = await adminClient
-        .from("subscriptions")
-        .select("id")
-        .eq("user_id", userId)
-        .maybeSingle();
-
-      const newPeriodEnd = new Date();
-      newPeriodEnd.setDate(newPeriodEnd.getDate() + 30); // 30 days extension
-
-      if (existingSub) {
-        const { error: updateErr } = await adminClient
-          .from("subscriptions")
-          .update({
-            status: "active",
-            price_id: "pro_monthly",
-            current_period_end: newPeriodEnd.toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existingSub.id);
-
-        if (updateErr) throw updateErr;
-      } else {
-        const { error: insertErr } = await adminClient
-          .from("subscriptions")
-          .insert({
-            user_id: userId,
-            status: "active",
-            price_id: "pro_monthly",
-            current_period_end: newPeriodEnd.toISOString(),
-          });
-
-        if (insertErr) throw insertErr;
-      }
-    } else if (planName === "Lifetime") {
-      // Set lifetime access flag on profiles
-      const { error: profileErr } = await adminClient
-        .from("profiles")
-        .update({
-          lifetime_access: true,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", userId);
-
-      if (profileErr) throw profileErr;
-    }
-
-    return res.status(200).json({ success: true, message: "Payment successfully verified and account upgraded." });
+    return res.status(200).json({ success: true, message: rpcResult?.message || "Payment successfully verified and account upgraded." });
   } catch (err: any) {
     Sentry.captureException(err);
     await Sentry.flush(2000);

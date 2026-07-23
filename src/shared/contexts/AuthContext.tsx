@@ -35,11 +35,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchProfile = async (userId: string) => {
     if (!supabase) return;
     try {
-      const { data: profileData, error: profileErr } = await supabase
+      let profileData: any = null;
+      const profileRes = await supabase
         .from("profiles")
-        .select("full_name, avatar_url")
+        .select("full_name, avatar_url, lifetime_access")
         .eq("id", userId)
         .single();
+
+      if (profileRes.error) {
+        if (profileRes.error.code === "42703") {
+          console.warn("lifetime_access column is missing from profiles table, retrying without it");
+          const retryRes = await supabase
+            .from("profiles")
+            .select("full_name, avatar_url")
+            .eq("id", userId)
+            .single();
+          if (retryRes.error) throw retryRes.error;
+          profileData = { ...retryRes.data, lifetime_access: false };
+        } else {
+          throw profileRes.error;
+        }
+      } else {
+        profileData = profileRes.data;
+      }
 
       const { data: subscriptionData } = await supabase
         .from("subscriptions")
@@ -53,10 +71,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq("user_id", userId)
         .single();
 
-      if (profileErr) throw profileErr;
-
-      const hasActiveSub = subscriptionData?.status === "active" && 
-        new Date(subscriptionData.current_period_end) > new Date();
+      const hasActiveSub = (subscriptionData?.status === "active" && 
+        new Date(subscriptionData.current_period_end) > new Date()) ||
+        profileData?.lifetime_access === true;
 
       setProfile({
         id: userId,
