@@ -9,7 +9,7 @@ import jobMatchHandler from './api/job-match';
 import rewriteHandler from './api/rewrite';
 import gamificationHandler from './api/gamification';
 import testSentryHandler from './api/test-sentry';
-import deployRpcHandler from './api/deploy-rpc';
+
 import testAnalyzeHandler from './api/test-analyze';
 import fixSuggestionHandler from './api/fix-suggestion';
 
@@ -31,7 +31,7 @@ export default defineConfig(() => {
               else if (url === '/api/rewrite' && req.method === 'POST') handler = rewriteHandler;
               else if (url === '/api/gamification') handler = gamificationHandler;
               else if (url === '/api/test-sentry') handler = testSentryHandler;
-              else if (url === '/api/deploy-rpc' && req.method === 'POST') handler = deployRpcHandler;
+
               else if (url === '/api/test-analyze' && req.method === 'POST') handler = testAnalyzeHandler;
               else if (url === '/api/fix-suggestion' && req.method === 'POST') handler = fixSuggestionHandler;
 

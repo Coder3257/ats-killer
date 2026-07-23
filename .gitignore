@@ -11,3 +11,6 @@ coverage/
 .env*
 *.zip
 scratch/
+
+.vercel
+.env*
