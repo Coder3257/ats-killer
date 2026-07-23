@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data: profileData, error: profileErr } = await supabase
         .from("profiles")
-        .select("full_name, avatar_url")
+        .select("full_name, avatar_url, lifetime_access")
         .eq("id", userId)
         .single();
 
@@ -55,8 +55,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq("user_id", userId)
         .single();
 
-      const hasActiveSub = subscriptionData?.status === "active" && 
-        new Date(subscriptionData.current_period_end) > new Date();
+      const hasActiveSub = (subscriptionData?.status === "active" && 
+        new Date(subscriptionData.current_period_end) > new Date()) ||
+        profileData?.lifetime_access === true;
 
       setProfile({
         id: userId,

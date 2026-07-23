@@ -23,7 +23,7 @@ export class UserRepository {
 
     const { data: profile, error } = await supabase
       .from("profiles")
-      .select("full_name, avatar_url")
+      .select("full_name, avatar_url, lifetime_access")
       .eq("id", userId)
       .single();
 
@@ -41,8 +41,9 @@ export class UserRepository {
       .eq("user_id", userId)
       .single();
 
-    const hasActiveSub = subscription?.status === "active" && 
-      new Date(subscription.current_period_end) > new Date();
+    const hasActiveSub = (subscription?.status === "active" && 
+      new Date(subscription.current_period_end) > new Date()) ||
+      profile?.lifetime_access === true;
 
     return {
       id: userId,
