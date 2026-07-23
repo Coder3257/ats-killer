@@ -1,4 +1,4 @@
-import React, { useState, Suspense, lazy, useMemo } from "react";
+import React, { useState, useEffect, Suspense, lazy, useMemo } from "react";
 import {
   LayoutDashboard,
   FileText,
@@ -18,8 +18,8 @@ import {
   X,
 } from "lucide-react";
 import { useAuth } from "../shared/contexts/AuthContext";
-
 import { useToast } from "../shared/contexts/ToastContext";
+import { UserRepository } from "../shared/repositories/UserRepository";
 
 const CareerDashboard = lazy(() => import("./CareerDashboard"));
 const Analyzer = lazy(() => import("./Analyzer"));
@@ -51,11 +51,22 @@ type TabType = "dashboard" | "analyzer" | "applications" | "copilot" | "progress
 export default function DashboardLayout({ onLogout }: DashboardLayoutProps) {
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, refreshProfile } = useAuth();
   const { showToast } = useToast();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showCreditsMenu, setShowCreditsMenu] = useState(false);
+
+  const [profileName, setProfileName] = useState("");
+  const [profileAvatar, setProfileAvatar] = useState("");
+  const [updatingProfile, setUpdatingProfile] = useState(false);
+
+  useEffect(() => {
+    if (profile) {
+      setProfileName(profile.full_name || "");
+      setProfileAvatar(profile.avatar_url || "");
+    }
+  }, [profile]);
 
   // Retrieve latest results from localStorage to share across modules
   const [analysisResult, setAnalysisResult] = useState<any>(() => {
@@ -648,16 +659,84 @@ export default function DashboardLayout({ onLogout }: DashboardLayoutProps) {
             )}
 
             {activeTab === "settings" && (
-              <div className="bg-white border border-[#E5E0D8] rounded-3xl p-6 md:p-8 premium-shadow space-y-6 max-w-xl">
+              <div className="bg-white border border-[#E5E0D8] rounded-3xl p-6 md:p-8 premium-shadow space-y-6 max-w-xl animate-pop-in">
                 <div>
                   <h3 className="text-lg font-bold font-display text-[#1C1008]">Profile Settings</h3>
-                  <p className="text-xs text-[#4E453F] font-semibold mt-0.5">Manage credentials and local API configurations</p>
+                  <p className="text-xs text-[#4E453F] font-semibold mt-0.5">Manage your personal profile details and accounts</p>
                 </div>
 
-                <div className="bg-stone-50 border border-[#E5E0D8]/60 p-5 rounded-2xl">
-                  <p className="text-xs font-semibold text-[#1C1008]/85 leading-relaxed">
-                    API integration is managed entirely server-side. Individual API key configuration has been disabled to secure quota usage and prevent credential exposure.
-                  </p>
+                <form 
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!user?.id) return;
+                    setUpdatingProfile(true);
+                    try {
+                      await UserRepository.updateProfile(user.id, {
+                        full_name: profileName,
+                        avatar_url: profileAvatar,
+                      });
+                      await refreshProfile();
+                      showToast("Profile details updated successfully!", "success");
+                    } catch (err: any) {
+                      showToast(err.message || "Failed to update profile", "error");
+                    } finally {
+                      setUpdatingProfile(false);
+                    }
+                  }}
+                  className="space-y-4"
+                >
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono font-bold text-stone-400 uppercase tracking-wider block">Full Name</label>
+                    <input
+                      required
+                      type="text"
+                      placeholder="e.g. Aman Gupta"
+                      value={profileName}
+                      onChange={(e) => setProfileName(e.target.value)}
+                      className="w-full bg-[#FAF8F5] border border-[#E5E0D8] rounded-xl p-2.5 text-xs text-[#1C1008] focus:ring-1 focus:ring-[#D97706]/40 focus:outline-none font-semibold"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-mono font-bold text-stone-400 uppercase tracking-wider block">Avatar Image URL</label>
+                    <input
+                      type="url"
+                      placeholder="e.g. https://example.com/avatar.jpg"
+                      value={profileAvatar}
+                      onChange={(e) => setProfileAvatar(e.target.value)}
+                      className="w-full bg-[#FAF8F5] border border-[#E5E0D8] rounded-xl p-2.5 text-xs text-[#1C1008] focus:ring-1 focus:ring-[#D97706]/40 focus:outline-none font-semibold"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={updatingProfile}
+                    className="w-full bg-[#1C1008] hover:bg-stone-900 disabled:opacity-45 text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    {updatingProfile ? (
+                      <span>Saving Changes...</span>
+                    ) : (
+                      <span>Save Changes</span>
+                    )}
+                  </button>
+                </form>
+
+                <div className="border-t border-[#E5E0D8]/60 pt-4.5 space-y-3">
+                  <h4 className="text-[10px] font-mono font-bold text-stone-400 uppercase tracking-wider">Account Quota Details</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-[#FAF8F5] border border-[#E5E0D8]/50 p-3 rounded-2xl">
+                      <span className="text-[8px] font-mono font-bold text-stone-400 uppercase block">Current Tier</span>
+                      <span className="text-xs font-bold text-[#1C1008] mt-1 block">
+                        {profile?.lifetime_access ? "Pro Active / Lifetime" : "Basic Trial"}
+                      </span>
+                    </div>
+                    <div className="bg-[#FAF8F5] border border-[#E5E0D8]/50 p-3 rounded-2xl">
+                      <span className="text-[8px] font-mono font-bold text-stone-400 uppercase block">Available Balance</span>
+                      <span className="text-xs font-bold text-[#D97706] mt-1 block">
+                        {profile?.lifetime_access ? "Infinite" : `${profile?.credits ?? 0} Credits`}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

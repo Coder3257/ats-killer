@@ -29,18 +29,27 @@ export class UserRepository {
 
     if (error) throw error;
 
+    const { data: subscription } = await supabase
+      .from("subscriptions")
+      .select("status, current_period_end")
+      .eq("user_id", userId)
+      .maybeSingle();
+
     const { data: credits } = await supabase
       .from("credits")
       .select("amount")
       .eq("user_id", userId)
       .single();
 
+    const hasActiveSub = subscription?.status === "active" && 
+      new Date(subscription.current_period_end) > new Date();
+
     return {
       id: userId,
       full_name: profile?.full_name || "",
       avatar_url: profile?.avatar_url || "",
       credits: credits?.amount || 0,
-      lifetime_access: !!profile?.lifetime_access,
+      lifetime_access: !!profile?.lifetime_access || hasActiveSub,
     };
   }
 

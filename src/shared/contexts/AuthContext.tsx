@@ -18,6 +18,7 @@ interface AuthContextType {
   error: string | null;
   signOut: () => Promise<void>;
   hasConfig: boolean;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,6 +41,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq("id", userId)
         .single();
 
+      const { data: subscriptionData } = await supabase
+        .from("subscriptions")
+        .select("status, current_period_end")
+        .eq("user_id", userId)
+        .maybeSingle();
+
       const { data: creditsData } = await supabase
         .from("credits")
         .select("amount")
@@ -48,12 +55,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (profileErr) throw profileErr;
 
+      const hasActiveSub = subscriptionData?.status === "active" && 
+        new Date(subscriptionData.current_period_end) > new Date();
+
       setProfile({
         id: userId,
         full_name: profileData?.full_name || "",
         avatar_url: profileData?.avatar_url || "",
         credits: creditsData?.amount || 0,
-        lifetime_access: !!profileData?.lifetime_access,
+        lifetime_access: !!profileData?.lifetime_access || hasActiveSub,
       });
     } catch (e: any) {
       // Fallback
@@ -63,6 +73,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         avatar_url: "",
         credits: 10,
       });
+    }
+  };
+
+  const refreshProfile = async () => {
+    if (user?.id) {
+      await fetchProfile(user.id);
     }
   };
 
@@ -128,6 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         error,
         signOut,
         hasConfig: hasSupabaseConfig,
+        refreshProfile,
       }}
     >
       {children}

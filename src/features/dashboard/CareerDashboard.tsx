@@ -88,6 +88,7 @@ export default function CareerDashboard({ result, animate, onNavigateTab }: Care
   const [copiedLetter, setCopiedLetter] = useState(false);
   const [goalCardExpanded, setGoalCardExpanded] = useState(false);
   const [funnelCardExpanded, setFunnelCardExpanded] = useState(false);
+  const [activeCoachSection, setActiveCoachSection] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -205,11 +206,19 @@ export default function CareerDashboard({ result, animate, onNavigateTab }: Care
     }
   }
 
+  const displayChallenges = useMemo(() => {
+    return dbChallenges.length > 0 ? dbChallenges : (result.weekly_challenges || []);
+  }, [dbChallenges, result.weekly_challenges]);
+
+  const displayBadges = useMemo(() => {
+    return dbBadges.length > 0 ? dbBadges : (result.achievements || []);
+  }, [dbBadges, result.achievements]);
+
   const derivedDailyProgress = useMemo(() => {
-    if (dbChallenges.length === 0) return 0;
-    const completed = dbChallenges.filter(c => c.completed).length;
-    return Math.round((completed / dbChallenges.length) * 100);
-  }, [dbChallenges]);
+    if (displayChallenges.length === 0) return 0;
+    const completed = displayChallenges.filter(c => c.completed).length;
+    return Math.round((completed / displayChallenges.length) * 100);
+  }, [displayChallenges]);
 
   // Group weekly timelines
   const timelineData = useMemo(() => {
@@ -418,8 +427,10 @@ export default function CareerDashboard({ result, animate, onNavigateTab }: Care
                         <div className="mt-4 pt-3.5 border-t border-stone-100 space-y-1">
                           <p className="text-[9px] text-stone-400 font-bold uppercase tracking-wider font-mono">Market Context</p>
                           <p className="text-xs text-[#1C1008] font-semibold leading-relaxed">
-                            🎯 <span className="text-[#D97706] font-bold">Top 15%</span> among similar applicants.
-                            <span className="block mt-0.5 text-stone-400 font-mono text-[9px]">3 points above industry benchmark for AI roles</span>
+                            🎯 <span className="text-[#D97706] font-bold">Top {Math.max(2, Math.round(100 - (current_score * 0.85)))}%</span> among similar applicants.
+                            <span className="block mt-0.5 text-stone-400 font-mono text-[9px]">
+                              {Math.abs(current_score - 72)} points {current_score >= 72 ? "above" : "below"} industry benchmark for {result.career_dashboard?.career_goal || "technical"} roles
+                            </span>
                           </p>
                         </div>
 
@@ -522,7 +533,7 @@ export default function CareerDashboard({ result, animate, onNavigateTab }: Care
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-                  {dbBadges.map((badge) => (
+                  {displayBadges.map((badge) => (
                     <div
                       key={badge.id}
                       className={`p-4 rounded-2xl border text-center transition-all flex flex-col items-center justify-between space-y-2 ${badge.unlocked
@@ -571,24 +582,40 @@ export default function CareerDashboard({ result, animate, onNavigateTab }: Care
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-[#FAF8F5] border border-[#E5E0D8]/50 p-4 rounded-2xl">
-                      <span className="text-[8px] font-mono font-extrabold text-[#D97706] bg-[#FEF3C7] px-2 py-0.5 rounded uppercase tracking-wider">Today's Priority</span>
+                    <div 
+                      onClick={() => setActiveCoachSection("Today's Priority")}
+                      className="bg-[#FAF8F5] border border-[#E5E0D8]/50 p-4 rounded-2xl cursor-pointer hover:border-[#D97706]/60 hover:shadow-sm transition-all group"
+                    >
+                      <span className="text-[8px] font-mono font-extrabold text-[#D97706] bg-[#FEF3C7] px-2 py-0.5 rounded uppercase tracking-wider group-hover:bg-[#D97706] group-hover:text-white transition-colors">Today's Priority</span>
                       <p className="text-xs text-[#1C1008] leading-relaxed font-semibold mt-2">{coachAdvice.todays_priority}</p>
+                      <span className="text-[9px] font-mono text-[#D97706] font-bold block mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Click to deep-dive →</span>
                     </div>
 
-                    <div className="bg-[#FAF8F5] border border-[#E5E0D8]/50 p-4 rounded-2xl">
-                      <span className="text-[8px] font-mono font-extrabold text-[#D97706] bg-[#FEF3C7] px-2 py-0.5 rounded uppercase tracking-wider">This Week</span>
+                    <div 
+                      onClick={() => setActiveCoachSection("This Week")}
+                      className="bg-[#FAF8F5] border border-[#E5E0D8]/50 p-4 rounded-2xl cursor-pointer hover:border-[#D97706]/60 hover:shadow-sm transition-all group"
+                    >
+                      <span className="text-[8px] font-mono font-extrabold text-[#D97706] bg-[#FEF3C7] px-2 py-0.5 rounded uppercase tracking-wider group-hover:bg-[#D97706] group-hover:text-white transition-colors">This Week</span>
                       <p className="text-xs text-[#1C1008] leading-relaxed font-semibold mt-2">{coachAdvice.this_week}</p>
+                      <span className="text-[9px] font-mono text-[#D97706] font-bold block mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Click to deep-dive →</span>
                     </div>
 
-                    <div className="bg-[#FAF8F5] border border-[#E5E0D8]/50 p-4 rounded-2xl">
-                      <span className="text-[8px] font-mono font-extrabold text-[#D97706] bg-[#FEF3C7] px-2 py-0.5 rounded uppercase tracking-wider">This Month</span>
+                    <div 
+                      onClick={() => setActiveCoachSection("This Month")}
+                      className="bg-[#FAF8F5] border border-[#E5E0D8]/50 p-4 rounded-2xl cursor-pointer hover:border-[#D97706]/60 hover:shadow-sm transition-all group"
+                    >
+                      <span className="text-[8px] font-mono font-extrabold text-[#D97706] bg-[#FEF3C7] px-2 py-0.5 rounded uppercase tracking-wider group-hover:bg-[#D97706] group-hover:text-white transition-colors">This Month</span>
                       <p className="text-xs text-[#1C1008] leading-relaxed font-semibold mt-2">{coachAdvice.this_month}</p>
+                      <span className="text-[9px] font-mono text-[#D97706] font-bold block mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Click to deep-dive →</span>
                     </div>
 
-                    <div className="bg-[#FAF8F5] border border-[#E5E0D8]/50 p-4 rounded-2xl">
-                      <span className="text-[8px] font-mono font-extrabold text-[#D97706] bg-[#FEF3C7] px-2 py-0.5 rounded uppercase tracking-wider">Expected Outcome</span>
+                    <div 
+                      onClick={() => setActiveCoachSection("Expected Outcome")}
+                      className="bg-[#FAF8F5] border border-[#E5E0D8]/50 p-4 rounded-2xl cursor-pointer hover:border-[#D97706]/60 hover:shadow-sm transition-all group"
+                    >
+                      <span className="text-[8px] font-mono font-extrabold text-[#D97706] bg-[#FEF3C7] px-2 py-0.5 rounded uppercase tracking-wider group-hover:bg-[#D97706] group-hover:text-white transition-colors">Expected Outcome</span>
                       <p className="text-xs text-[#1C1008] leading-relaxed font-semibold mt-2">{coachAdvice.expected_outcome}</p>
+                      <span className="text-[9px] font-mono text-[#D97706] font-bold block mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Click to deep-dive →</span>
                     </div>
                   </div>
                 </div>
@@ -698,7 +725,7 @@ export default function CareerDashboard({ result, animate, onNavigateTab }: Care
                   <div className="md:col-span-6 space-y-4">
                     <span className="text-[9px] font-mono font-bold text-stone-400 uppercase tracking-wider block">Weekly Goal Targets</span>
                     <div className="space-y-3">
-                      {dbChallenges.map((challenge) => (
+                      {displayChallenges.map((challenge) => (
                         <div
                           key={challenge.id}
                           className={`bg-white border rounded-2xl p-4.5 premium-shadow flex items-start gap-3 transition-colors ${challenge.completed ? "border-emerald-200 bg-emerald-50/10" : "border-[#E5E0D8]"
@@ -1045,10 +1072,146 @@ export default function CareerDashboard({ result, animate, onNavigateTab }: Care
               )}
             </div>
           )}
-
         </AnimatePresence>
       </div>
 
+      {/* AI Career Coach Advice Modal */}
+      <AnimatePresence>
+        {activeCoachSection && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveCoachSection(null)}
+              className="fixed inset-0 bg-black z-50 cursor-pointer"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white border border-[#E5E0D8] rounded-3xl p-6 shadow-2xl z-50 space-y-6"
+            >
+              <div className="flex justify-between items-center border-b border-[#E5E0D8]/60 pb-3">
+                <div className="flex items-center gap-2">
+                  <Flame className="h-4.5 w-4.5 text-[#D97706]" />
+                  <h4 className="text-sm font-extrabold font-display text-[#1C1008]">{activeCoachSection} Detail</h4>
+                </div>
+                <button
+                  onClick={() => setActiveCoachSection(null)}
+                  className="text-stone-400 hover:text-stone-700 cursor-pointer"
+                >
+                  <XCircle className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-[#FAF8F5] border border-[#E5E0D8]/50 p-4 rounded-2xl">
+                  <p className="text-xs text-[#1C1008] font-bold leading-relaxed">
+                    {activeCoachSection === "Today's Priority" && coachAdvice.todays_priority}
+                    {activeCoachSection === "This Week" && coachAdvice.this_week}
+                    {activeCoachSection === "This Month" && coachAdvice.this_month}
+                    {activeCoachSection === "Expected Outcome" && coachAdvice.expected_outcome}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <h5 className="text-[10px] font-mono font-bold text-stone-400 uppercase tracking-wider">Actionable Strategy Checklist</h5>
+                  <div className="space-y-2">
+                    {activeCoachSection === "Today's Priority" && [
+                      "Map core resume bullet points directly against target keywords",
+                      "Ensure quantitative metric ratios are above 45% in current work experiences",
+                      "Perform layout formatting validation check"
+                    ].map((step, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-xs text-[#4E453F] font-semibold">
+                        <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                        <span>{step}</span>
+                      </div>
+                    ))}
+
+                    {activeCoachSection === "This Week" && [
+                      "Address primary keyword gaps identified in the skills gap tab",
+                      "Calibrate interview preparedness through mock technical Q&A logs",
+                      "Schedule calendar reminders for following up on sent proposals"
+                    ].map((step, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-xs text-[#4E453F] font-semibold">
+                        <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                        <span>{step}</span>
+                      </div>
+                    ))}
+
+                    {activeCoachSection === "This Month" && [
+                      "Publish optimized resume versions targeting standard poolers",
+                      "Deploy verified containerized API instances to validate credentials",
+                      "Acquire target skill milestone to unlock high compatibility listings"
+                    ].map((step, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-xs text-[#4E453F] font-semibold">
+                        <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                        <span>{step}</span>
+                      </div>
+                    ))}
+
+                    {activeCoachSection === "Expected Outcome" && [
+                      "Elevate compatibility index into top 10% bracket",
+                      "Increase recruiter callback ratios by matching critical indicators",
+                      "Acquire at least 2 firm technical interview stages"
+                    ].map((step, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-xs text-[#4E453F] font-semibold">
+                        <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                        <span>{step}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {(activeCoachSection === "This Week" || activeCoachSection === "This Month") && (
+                  <>
+                    {coachAdvice.recommended_courses && coachAdvice.recommended_courses.length > 0 && (
+                      <div className="space-y-2 pt-2 border-t border-[#E5E0D8]/40">
+                        <h5 className="text-[10px] font-mono font-bold text-stone-400 uppercase tracking-wider">Recommended Courses</h5>
+                        <div className="space-y-1.5">
+                          {coachAdvice.recommended_courses.map((course: any, idx: number) => (
+                            <div key={idx} className="text-xs font-semibold text-[#1C1008] flex justify-between items-center bg-amber-50/40 p-2 rounded-xl border border-amber-100/50">
+                              <span>{course.title} ({course.provider})</span>
+                              {course.url && (
+                                <a href={course.url} target="_blank" rel="noopener noreferrer" className="text-[#D97706] hover:underline flex items-center gap-0.5">
+                                  <span>Enroll</span>
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {coachAdvice.recommended_projects && coachAdvice.recommended_projects.length > 0 && (
+                      <div className="space-y-2 pt-2 border-t border-[#E5E0D8]/40">
+                        <h5 className="text-[10px] font-mono font-bold text-stone-400 uppercase tracking-wider">Recommended Portfolio Projects</h5>
+                        <div className="space-y-1.5">
+                          {coachAdvice.recommended_projects.map((proj: any, idx: number) => (
+                            <div key={idx} className="bg-stone-50 border border-stone-200/60 p-2 rounded-xl space-y-0.5">
+                              <p className="text-xs font-extrabold text-[#1C1008]">{proj.title}</p>
+                              <p className="text-[10px] text-[#4E453F] font-semibold leading-relaxed">{proj.description}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              <button
+                onClick={() => setActiveCoachSection(null)}
+                className="w-full bg-[#1C1008] hover:bg-stone-900 text-white font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer"
+              >
+                Done / Back to Hub
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
