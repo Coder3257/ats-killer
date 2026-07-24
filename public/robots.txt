@@ -4,4 +4,4 @@ Disallow: /dashboard
 Disallow: /analyzer
 Disallow: /auth
 
-Sitemap: https://ats-killer.vercel.app/sitemap.xml
+Sitemap: https://ats-killer-seven.vercel.app/sitemap.xml
