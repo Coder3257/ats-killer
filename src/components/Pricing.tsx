@@ -35,6 +35,14 @@ export default function Pricing() {
     setErrorMessage(null);
 
     try {
+      try {
+        if (typeof window !== 'undefined') {
+          posthog.capture('checkout_started', { planName });
+        }
+      } catch (trackErr) {
+        console.warn('Failed to track checkout_started event:', trackErr);
+      }
+
       // 1. Create order on the server
       const response = await fetch("/api/create-order", {
         method: "POST",
