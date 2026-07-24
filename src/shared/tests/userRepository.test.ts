@@ -52,6 +52,15 @@ describe("UserRepository", () => {
             }
             return Promise.resolve({ data: null, error: null });
           }),
+          maybeSingle: vi.fn(() => {
+            if (table === "subscriptions") {
+              return Promise.resolve({
+                data: { status: "active", current_period_end: "2026-12-31T23:59:59.000Z" },
+                error: null,
+              });
+            }
+            return Promise.resolve({ data: null, error: null });
+          }),
         };
         return query;
       });
@@ -63,19 +72,14 @@ describe("UserRepository", () => {
     });
 
     it("should update profile in Supabase table", async () => {
-      const mockUpdate = vi.fn().mockImplementation(() => {
-        const query: any = {
-          eq: vi.fn(() => Promise.resolve({ error: null })),
-        };
-        return query;
-      });
+      const mockUpsert = vi.fn().mockImplementation(() => Promise.resolve({ error: null }));
 
       mockSupabase.from.mockImplementation((table: string): any => ({
-        update: mockUpdate,
+        upsert: mockUpsert,
       }));
 
       await UserRepository.updateProfile("usr-online", { full_name: "Bob Builder", avatar_url: "new-url" });
-      expect(mockUpdate).toHaveBeenCalledWith({ full_name: "Bob Builder", avatar_url: "new-url" });
+      expect(mockUpsert).toHaveBeenCalledWith({ id: "usr-online", full_name: "Bob Builder", avatar_url: "new-url" });
     });
   });
 });

@@ -41,12 +41,36 @@ import { useToast } from "../../shared/contexts/ToastContext";
 
 import { AnalysisRepository } from "../../shared/repositories/AnalysisRepository";
 import { InterviewRepository } from "../../shared/repositories/InterviewRepository";
+import LoadingSequence from "../../components/LoadingSequence";
+
 
 interface CareerDashboardProps {
   result: AnalysisResult;
   animate: boolean;
   onNavigateTab?: (tab: any) => void;
 }
+
+const renderBadgeIcon = (iconName: string) => {
+  const normalized = (iconName || "").toLowerCase();
+  switch (normalized) {
+    case "target":
+      return <Target className="h-5 w-5 text-[#D97706]" />;
+    case "speedometer":
+    case "trendingup":
+    case "trending-up":
+      return <TrendingUp className="h-5 w-5 text-indigo-500" />;
+    case "zap":
+      return <Zap className="h-5 w-5 text-amber-500" />;
+    case "flame":
+      return <Flame className="h-5 w-5 text-orange-500" />;
+    case "trophy":
+      return <Trophy className="h-5 w-5 text-yellow-500" />;
+    case "award":
+      return <Award className="h-5 w-5 text-emerald-500" />;
+    default:
+      return <Trophy className="h-5 w-5 text-stone-400" />;
+  }
+};
 
 export default function CareerDashboard({ result, animate, onNavigateTab }: CareerDashboardProps) {
   const safeOnNavigateTab = onNavigateTab ?? (() => { });
@@ -423,36 +447,11 @@ export default function CareerDashboard({ result, animate, onNavigateTab }: Care
                         transition={{ duration: 0.2 }}
                         className="overflow-hidden"
                       >
-                        {/* Benchmark Context */}
-                        <div className="mt-4 pt-3.5 border-t border-stone-100 space-y-1">
-                          <p className="text-[9px] text-stone-400 font-bold uppercase tracking-wider font-mono">Market Context</p>
-                          <p className="text-xs text-[#1C1008] font-semibold leading-relaxed">
-                            🎯 <span className="text-[#D97706] font-bold">Top {Math.max(2, Math.round(100 - (current_score * 0.85)))}%</span> among similar applicants.
-                            <span className="block mt-0.5 text-stone-400 font-mono text-[9px]">
-                              {Math.abs(current_score - 72)} points {current_score >= 72 ? "above" : "below"} industry benchmark for {result.career_dashboard?.career_goal || "technical"} roles
-                            </span>
+                        <div className="pt-4 mt-4 border-t border-stone-100 space-y-3">
+                          <p className="text-[10px] text-[#4E453F] leading-relaxed font-medium">
+                            {result.career_dashboard?.goal_description || "Consistent improvement is key. Focus on tailoring your bullet points to match the target role keywords identified in your latest scan."}
                           </p>
                         </div>
-
-                        <div className="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-gray-100">
-                          <div>
-                            <p className="text-[9px] font-mono text-gray-400 uppercase tracking-wider">Current Score</p>
-                            <p className="text-2xl font-display font-extrabold text-[#1C1008] mt-1">{current_score}</p>
-                          </div>
-                          <div>
-                            <p className="text-[9px] font-mono text-gray-400 uppercase tracking-wider">Best Score</p>
-                            <p className="text-2xl font-display font-extrabold text-emerald-600 mt-1">{best_score}</p>
-                          </div>
-                        </div>
-
-                        {/* Quick Action Analyzer Scan */}
-                        <button
-                          onClick={() => onNavigateTab("analyzer")}
-                          className="mt-4 w-full bg-[#1C1008] hover:bg-stone-900 text-white font-bold py-2.5 rounded-xl text-center text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                        >
-                          <RotateCcw className="h-3.5 w-3.5 text-[#D97706]" />
-                          <span>Re-Scan / Optimize Resume</span>
-                        </button>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -480,20 +479,36 @@ export default function CareerDashboard({ result, animate, onNavigateTab }: Care
                         transition={{ duration: 0.2 }}
                         className="overflow-hidden"
                       >
-                        <div className="grid grid-cols-3 gap-2 text-center mt-6">
-                          <div className="bg-[#FAF8F5] border border-gray-100 p-2.5 rounded-2xl">
-                            <span className="text-[9px] font-mono text-gray-400 uppercase tracking-wider">Apps</span>
-                            <p className="text-xl font-display font-extrabold text-[#1C1008] mt-1">{appStats.total}</p>
+                        {appStats.total === 0 ? (
+                          <div className="flex flex-col items-center justify-center text-center p-6 space-y-3">
+                            <Activity className="h-7 w-7 text-purple-400 mx-auto animate-pulse" />
+                            <p className="text-[10px] text-[#4E453F] font-bold leading-relaxed max-w-[200px]">
+                              No data yet — run an analysis to populate this
+                            </p>
+                            <button
+                              onClick={() => safeOnNavigateTab("analyzer")}
+                              className="px-3.5 py-1.5 bg-[#1C1008] text-white hover:bg-stone-900 transition-colors rounded-xl text-[9px] font-bold inline-flex items-center gap-1 cursor-pointer"
+                            >
+                              <span>Analyze Resume</span>
+                              <ChevronRight className="h-3 w-3" />
+                            </button>
                           </div>
-                          <div className="bg-[#FAF8F5] border border-gray-100 p-2.5 rounded-2xl">
-                            <span className="text-[9px] font-mono text-gray-400 uppercase tracking-wider">Interviews</span>
-                            <p className="text-xl font-display font-extrabold text-purple-600 mt-1">{appStats.interviews}</p>
+                        ) : (
+                          <div className="grid grid-cols-3 gap-2 text-center mt-6">
+                            <div className="bg-[#FAF8F5] border border-gray-100 p-2.5 rounded-2xl">
+                              <span className="text-[9px] font-mono text-gray-400 uppercase tracking-wider">Apps</span>
+                              <p className="text-xl font-display font-extrabold text-[#1C1008] mt-1">{appStats.total}</p>
+                            </div>
+                            <div className="bg-[#FAF8F5] border border-gray-100 p-2.5 rounded-2xl">
+                              <span className="text-[9px] font-mono text-gray-400 uppercase tracking-wider">Interviews</span>
+                              <p className="text-xl font-display font-extrabold text-purple-600 mt-1">{appStats.interviews}</p>
+                            </div>
+                            <div className="bg-[#FAF8F5] border border-gray-100 p-2.5 rounded-2xl">
+                              <span className="text-[9px] font-mono text-gray-400 uppercase tracking-wider">Offers</span>
+                              <p className="text-xl font-display font-extrabold text-emerald-600 mt-1">{appStats.offers}</p>
+                            </div>
                           </div>
-                          <div className="bg-[#FAF8F5] border border-gray-100 p-2.5 rounded-2xl">
-                            <span className="text-[9px] font-mono text-gray-400 uppercase tracking-wider">Offers</span>
-                            <p className="text-xl font-display font-extrabold text-emerald-600 mt-1">{appStats.offers}</p>
-                          </div>
-                        </div>
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -541,7 +556,9 @@ export default function CareerDashboard({ result, animate, onNavigateTab }: Care
                           : "bg-gray-50/50 border-gray-100 opacity-60"
                         }`}
                     >
-                      <span className="text-2xl">{badge.icon || "🏆"}</span>
+                      <div className="h-10 w-10 bg-white border border-[#E5E0D8]/60 rounded-full flex items-center justify-center shadow-sm mb-1">
+                        {renderBadgeIcon(badge.icon)}
+                      </div>
                       <div>
                         <h5 className="text-[11px] font-extrabold text-[#1C1008] leading-tight truncate max-w-full" title={badge.name}>
                           {badge.name}
@@ -1022,23 +1039,20 @@ export default function CareerDashboard({ result, animate, onNavigateTab }: Care
                       />
                     </div>
 
-                    <button
-                      type="submit"
-                      disabled={generatingLetter || !targetCompany.trim() || !targetRole.trim()}
-                      className="w-full bg-[#1C1008] hover:bg-stone-900 disabled:opacity-45 text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                    >
-                      {generatingLetter ? (
-                        <>
-                          <Loader2 className="h-3.5 w-3.5 animate-spin text-[#D97706]" />
-                          <span>Generating Cover Letter...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-3.5 w-3.5 text-[#D97706]" />
-                          <span>Generate Cover Letter</span>
-                        </>
-                      )}
-                    </button>
+                    {generatingLetter ? (
+                      <div className="w-full py-2">
+                        <LoadingSequence steps={["Analyzing company profile...", "Reading target role...", "Drafting cover letter...", "Finalizing presentation..."]} />
+                      </div>
+                    ) : (
+                      <button
+                        type="submit"
+                        disabled={!targetCompany.trim() || !targetRole.trim()}
+                        className="w-full bg-[#1C1008] hover:bg-stone-900 text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <Sparkles className="h-3.5 w-3.5 text-[#D97706]" />
+                        <span>Generate Cover Letter</span>
+                      </button>
+                    )}
                   </form>
 
                   {/* Right: generated output display */}

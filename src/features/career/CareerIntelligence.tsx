@@ -18,6 +18,8 @@ import {
   Target,
 } from "lucide-react";
 import { AnalysisResult } from "../../hooks/useGeminiAnalyzer";
+import DiagnosticModal from "../../components/DiagnosticModal";
+
 
 interface CareerIntelligenceProps {
   result: AnalysisResult;
@@ -67,6 +69,9 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
     recruiter_appeal: 68,
     overall: 66,
   };
+
+  const [activeDiagnosticDetail, setActiveDiagnosticDetail] = useState<any>(null);
+
 
   // State to filter skill gap categories
   const [activeSkillTab, setActiveSkillTab] = useState<"All" | "Already Strong" | "Needs Improvement" | "Critical Missing" | "Learning Priority">("All");
@@ -122,7 +127,19 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="bg-[#FAF8F5] border border-[#E5E0D8]/60 rounded-2xl p-5 hover:shadow-md transition-shadow flex flex-col justify-between"
+            onClick={() => setActiveDiagnosticDetail({
+              title: "Funnel Stage 1: ATS Pass Calibration",
+              description: probabilityData.ats_pass.explanation,
+              details: [
+                `Success Probability: ${probabilityData.ats_pass.percentage}%`,
+                `Confidence Level: ${probabilityData.ats_pass.confidence}%`
+              ],
+              actionItems: [
+                "Address layout warnings and formatting bugs in the Analyzer tab.",
+                "Ensure keyword density matches the target job description closely."
+              ]
+            })}
+            className="bg-[#FAF8F5] border border-[#E5E0D8]/60 rounded-2xl p-5 hover:shadow-md hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/40 hover:-translate-y-[2px] transition-all cursor-pointer flex flex-col justify-between"
           >
             <div>
               <div className="flex justify-between items-center mb-3">
@@ -162,7 +179,19 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="bg-[#FAF8F5] border border-[#E5E0D8]/60 rounded-2xl p-5 hover:shadow-md transition-shadow flex flex-col justify-between"
+            onClick={() => setActiveDiagnosticDetail({
+              title: "Funnel Stage 2: Recruiter Callback Estimation",
+              description: probabilityData.recruiter_callback.explanation,
+              details: [
+                `Success Probability: ${probabilityData.recruiter_callback.percentage}%`,
+                `Confidence Level: ${probabilityData.recruiter_callback.confidence}%`
+              ],
+              actionItems: [
+                "Tailor experience descriptions to showcase active ownership rather than tasks.",
+                "Optimize summary phrasing to highlight high-impact action verbs."
+              ]
+            })}
+            className="bg-[#FAF8F5] border border-[#E5E0D8]/60 rounded-2xl p-5 hover:shadow-md hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/40 hover:-translate-y-[2px] transition-all cursor-pointer flex flex-col justify-between"
           >
             <div>
               <div className="flex justify-between items-center mb-3">
@@ -202,7 +231,19 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="bg-[#FAF8F5] border border-[#E5E0D8]/60 rounded-2xl p-5 hover:shadow-md transition-shadow flex flex-col justify-between"
+            onClick={() => setActiveDiagnosticDetail({
+              title: "Funnel Stage 3: Interview Pass Prediction",
+              description: probabilityData.interview.explanation,
+              details: [
+                `Success Probability: ${probabilityData.interview.percentage}%`,
+                `Confidence Level: ${probabilityData.interview.confidence}%`
+              ],
+              actionItems: [
+                "Prepare core coding patterns (caching, partition structures) from your tech tags.",
+                "Practice STAR method behavioral stories for achievements listed in your graph."
+              ]
+            })}
+            className="bg-[#FAF8F5] border border-[#E5E0D8]/60 rounded-2xl p-5 hover:shadow-md hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/40 hover:-translate-y-[2px] transition-all cursor-pointer flex flex-col justify-between"
           >
             <div>
               <div className="flex justify-between items-center mb-3">
@@ -242,7 +283,19 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="bg-[#FAF8F5] border border-[#E5E0D8]/60 rounded-2xl p-5 hover:shadow-md transition-shadow flex flex-col justify-between"
+            onClick={() => setActiveDiagnosticDetail({
+              title: "Funnel Stage 4: Salary Offer Conversion",
+              description: probabilityData.offer.explanation,
+              details: [
+                `Success Probability: ${probabilityData.offer.percentage}%`,
+                `Confidence Level: ${probabilityData.offer.confidence}%`
+              ],
+              actionItems: [
+                "Study market pricing models in the Salary Intelligence section to optimize negotiation.",
+                "Highlight business-value indicators in your project discussions."
+              ]
+            })}
+            className="bg-[#FAF8F5] border border-[#E5E0D8]/60 rounded-2xl p-5 hover:shadow-md hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/40 hover:-translate-y-[2px] transition-all cursor-pointer flex flex-col justify-between"
           >
             <div>
               <div className="flex justify-between items-center mb-3">
@@ -343,19 +396,59 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
 
           {/* Salary Figures */}
           <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div className="bg-[#FAF8F5] border border-[#E5E0D8]/60 rounded-xl p-4 flex flex-col justify-between">
+            <div 
+              onClick={() => setActiveDiagnosticDetail({
+                title: "Current Market Value Analysis",
+                description: "Based on the skills, scale keywords, and tools extracted from your active resume draft.",
+                details: [
+                  `Estimated Current Value: ${salaryData.current_market}`,
+                  `Market Percentile: ${salaryData.percentile}th percentile`
+                ],
+                actionItems: [
+                  "Include higher-value design patterns (e.g., Redis clustering, partition schemes) to push into higher bands.",
+                  "Add core metrics-focused bullets showing cost reduction or efficiency optimization."
+                ]
+              })}
+              className="bg-[#FAF8F5] border border-[#E5E0D8]/60 rounded-xl p-4 flex flex-col justify-between cursor-pointer hover:border-[#10B981]/40 hover:bg-[#F5F0E8]/40 hover:-translate-y-[2px] transition-all duration-200"
+            >
               <span className="text-[9px] font-mono font-bold text-[#4E453F] uppercase tracking-wider">Current Market</span>
               <p className="text-lg font-extrabold text-[#1C1008] mt-2">{salaryData.current_market}</p>
               <span className="text-[9px] text-[#4E453F]/75 font-semibold mt-1">Based on current resume draft</span>
             </div>
 
-            <div className="bg-[#FAF8F5] border border-[#E5E0D8]/60 rounded-xl p-4 flex flex-col justify-between">
+            <div 
+              onClick={() => setActiveDiagnosticDetail({
+                title: "Expected Target Value",
+                description: "The standard hiring compensation median for candidates who fulfill 100% of the target job description requirements.",
+                details: [
+                  `Expected Target: ${salaryData.expected}`
+                ],
+                actionItems: [
+                  "Align missing technical skills to match the target JD checklist.",
+                  "Verify your resume has at least 80% keyword alignment with target requirements."
+                ]
+              })}
+              className="bg-[#FAF8F5] border border-[#E5E0D8]/60 rounded-xl p-4 flex flex-col justify-between cursor-pointer hover:border-[#10B981]/40 hover:bg-[#F5F0E8]/40 hover:-translate-y-[2px] transition-all duration-200"
+            >
               <span className="text-[9px] font-mono font-bold text-[#4E453F] uppercase tracking-wider">Expected Value</span>
               <p className="text-lg font-extrabold text-[#1C1008] mt-2">{salaryData.expected}</p>
               <span className="text-[9px] text-[#4E453F]/75 font-semibold mt-1">Hiring target standard</span>
             </div>
 
-            <div className="bg-[#FAF8F5] border-2 border-[#10B981]/30 rounded-xl p-4 flex flex-col justify-between relative overflow-hidden">
+            <div 
+              onClick={() => setActiveDiagnosticDetail({
+                title: "Potential Salary payoff",
+                description: "Estimated market value after integrating all recommended optimizations, achievements, and keywords.",
+                details: [
+                  `Potential Payoff: ${salaryData.potential}`
+                ],
+                actionItems: [
+                  "Complete the recommended projects in the career coach suggestions.",
+                  "Implement XYZ achievements formulas for all major experience nodes."
+                ]
+              })}
+              className="bg-[#FAF8F5] border-2 border-[#10B981]/30 rounded-xl p-4 flex flex-col justify-between relative overflow-hidden cursor-pointer hover:border-[#10B981]/70 hover:bg-[#F5F0E8]/40 hover:-translate-y-[2px] transition-all duration-200"
+            >
               <div className="absolute top-0 right-0 bg-[#10B981] text-white text-[8px] font-mono font-bold px-1.5 py-0.5 rounded-bl uppercase">
                 Optimized
               </div>
@@ -442,7 +535,19 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3 }}
                   key={skill.name}
-                  className={`border rounded-2xl p-4 flex flex-col justify-between bg-[#FAF8F5] ${tagStyle} transition-all`}
+                  onClick={() => setActiveDiagnosticDetail({
+                    title: `Skill Gap Diagnostic: ${skill.name}`,
+                    description: `This competency is flagged as "${skill.category}".`,
+                    details: [
+                      `Skill status: ${skill.category}`,
+                      `Estimated timeframe to bridge: ${skill.learning_time || "0 days"}`
+                    ],
+                    actionItems: [
+                      `Review target job requirements referencing ${skill.name}.`,
+                      "Practice relative systems engineering mock loops."
+                    ]
+                  })}
+                  className={`border rounded-2xl p-4 flex flex-col justify-between bg-[#FAF8F5] ${tagStyle} transition-all cursor-pointer hover:scale-[1.02]`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="space-y-1">
@@ -554,7 +659,21 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
                   </span>
                 </div>
                 
-                <div className="bg-[#FAF8F5] border border-[#E5E0D8]/60 rounded-2xl p-4">
+                <div 
+                  onClick={() => setActiveDiagnosticDetail({
+                    title: `Career Roadmap: ${step.title}`,
+                    description: `Action items scheduled for: ${step.timeframe}`,
+                    details: [
+                      `Objective: ${step.title}`,
+                      `Sequence step: ${idx + 1}`
+                    ],
+                    actionItems: [
+                      step.description,
+                      "Mark as in progress when complete."
+                    ]
+                  })}
+                  className="bg-[#FAF8F5] border border-[#E5E0D8]/60 rounded-2xl p-4 cursor-pointer hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/40 transition-all duration-200"
+                >
                   <p className="text-sm font-extrabold text-[#1C1008] font-display">
                     {step.title}
                   </p>
@@ -634,7 +753,20 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
           <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
             
             {/* Competency Item 1: Technical */}
-            <div className="space-y-1.5 bg-[#FAF8F5] border border-[#E5E0D8]/60 p-3.5 rounded-xl">
+            <div 
+              onClick={() => setActiveDiagnosticDetail({
+                title: "Technical Skills Alignment Diagnostic",
+                description: "Comparison of your technical stack keywords (languages, frameworks, tools) against the ideal target job description candidate profile.",
+                details: [
+                  `Competency Score: ${competitivenessData.technical_skills}%`
+                ],
+                actionItems: [
+                  "Include more direct keyword references for missing skills in project details.",
+                  "Practice mock coding drills for listed tech tags to prepare for technical screenings."
+                ]
+              })}
+              className="space-y-1.5 bg-[#FAF8F5] border border-[#E5E0D8]/60 p-3.5 rounded-xl cursor-pointer hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/40 hover:-translate-y-[2px] transition-all duration-200"
+            >
               <div className="flex justify-between items-baseline text-xs font-bold text-[#1C1008]">
                 <span>Technical Skills alignment</span>
                 <span className="font-mono text-[#D97706]">{competitivenessData.technical_skills}%</span>
@@ -650,7 +782,20 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
             </div>
 
             {/* Competency Item 2: Leadership */}
-            <div className="space-y-1.5 bg-[#FAF8F5] border border-[#E5E0D8]/60 p-3.5 rounded-xl">
+            <div 
+              onClick={() => setActiveDiagnosticDetail({
+                title: "Leadership Presence Diagnostic",
+                description: "How well your past project bullet points convey ownership, decision-making scale, and execution leadership.",
+                details: [
+                  `Competency Score: ${competitivenessData.leadership}%`
+                ],
+                actionItems: [
+                  "Re-phrase passive descriptions to highlight leading cross-functional teams.",
+                  "Add metrics-driven accomplishments showing scale and team growth."
+                ]
+              })}
+              className="space-y-1.5 bg-[#FAF8F5] border border-[#E5E0D8]/60 p-3.5 rounded-xl cursor-pointer hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/40 hover:-translate-y-[2px] transition-all duration-200"
+            >
               <div className="flex justify-between items-baseline text-xs font-bold text-[#1C1008]">
                 <span>Leadership Presence</span>
                 <span className="font-mono text-[#D97706]">{competitivenessData.leadership}%</span>
@@ -666,7 +811,20 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
             </div>
 
             {/* Competency Item 3: Communication */}
-            <div className="space-y-1.5 bg-[#FAF8F5] border border-[#E5E0D8]/60 p-3.5 rounded-xl">
+            <div 
+              onClick={() => setActiveDiagnosticDetail({
+                title: "Communication Metrics Diagnostic",
+                description: "Assesses the vocabulary clarity, grammatical elegance, and sentence flow of your resume description blocks.",
+                details: [
+                  `Competency Score: ${competitivenessData.communication}%`
+                ],
+                actionItems: [
+                  "Simplify complex run-on sentences in your experience bullets.",
+                  "Verify formatting alignment and clean presentation margins."
+                ]
+              })}
+              className="space-y-1.5 bg-[#FAF8F5] border border-[#E5E0D8]/60 p-3.5 rounded-xl cursor-pointer hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/40 hover:-translate-y-[2px] transition-all duration-200"
+            >
               <div className="flex justify-between items-baseline text-xs font-bold text-[#1C1008]">
                 <span>Communication metrics</span>
                 <span className="font-mono text-[#D97706]">{competitivenessData.communication}%</span>
@@ -682,7 +840,20 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
             </div>
 
             {/* Competency Item 4: Problem Solving */}
-            <div className="space-y-1.5 bg-[#FAF8F5] border border-[#E5E0D8]/60 p-3.5 rounded-xl">
+            <div 
+              onClick={() => setActiveDiagnosticDetail({
+                title: "Problem Solving Depth Diagnostic",
+                description: "Audits your achievements to see if you explicitly define the complex challenges, engineering scale, and resolutions you deployed.",
+                details: [
+                  `Competency Score: ${competitivenessData.problem_solving}%`
+                ],
+                actionItems: [
+                  "Use the STAR methodology to describe resolution actions in detail.",
+                  "Highlight database bottlenecks or platform architectural optimizations."
+                ]
+              })}
+              className="space-y-1.5 bg-[#FAF8F5] border border-[#E5E0D8]/60 p-3.5 rounded-xl cursor-pointer hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/40 hover:-translate-y-[2px] transition-all duration-200"
+            >
               <div className="flex justify-between items-baseline text-xs font-bold text-[#1C1008]">
                 <span>Problem Solving depth</span>
                 <span className="font-mono text-[#D97706]">{competitivenessData.problem_solving}%</span>
@@ -698,7 +869,20 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
             </div>
 
             {/* Competency Item 5: Business Understanding */}
-            <div className="space-y-1.5 bg-[#FAF8F5] border border-[#E5E0D8]/60 p-3.5 rounded-xl">
+            <div 
+              onClick={() => setActiveDiagnosticDetail({
+                title: "Business & Domain Acumen Diagnostic",
+                description: "How well your experience bullets showcase alignment with business goals, cost optimization, or user monetization metrics.",
+                details: [
+                  `Competency Score: ${competitivenessData.business_understanding}%`
+                ],
+                actionItems: [
+                  "Quantify business value impact (e.g. reduced infrastructure costs, increased click-through rate).",
+                  "Explain the 'why' behind technical choices relative to product scale."
+                ]
+              })}
+              className="space-y-1.5 bg-[#FAF8F5] border border-[#E5E0D8]/60 p-3.5 rounded-xl cursor-pointer hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/40 hover:-translate-y-[2px] transition-all duration-200"
+            >
               <div className="flex justify-between items-baseline text-xs font-bold text-[#1C1008]">
                 <span>Business & Domain acumen</span>
                 <span className="font-mono text-[#D97706]">{competitivenessData.business_understanding}%</span>
@@ -714,7 +898,20 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
             </div>
 
             {/* Competency Item 6: ATS Friendliness */}
-            <div className="space-y-1.5 bg-[#FAF8F5] border border-[#E5E0D8]/60 p-3.5 rounded-xl">
+            <div 
+              onClick={() => setActiveDiagnosticDetail({
+                title: "ATS Parsing Friendliness Diagnostic",
+                description: "Simulates parser parsing checks for non-standard fonts, nested columns, and layout tables.",
+                details: [
+                  `Competency Score: ${competitivenessData.ats_friendliness}%`
+                ],
+                actionItems: [
+                  "Ensure layout uses single-column presentation.",
+                  "Test document parsing compatibility in the ATS Sandbox Engine."
+                ]
+              })}
+              className="space-y-1.5 bg-[#FAF8F5] border border-[#E5E0D8]/60 p-3.5 rounded-xl cursor-pointer hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/40 hover:-translate-y-[2px] transition-all duration-200"
+            >
               <div className="flex justify-between items-baseline text-xs font-bold text-[#1C1008]">
                 <span>ATS Parsing Friendliness</span>
                 <span className="font-mono text-[#D97706]">{competitivenessData.ats_friendliness}%</span>
@@ -730,7 +927,20 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
             </div>
 
             {/* Competency Item 7: Recruiter Appeal */}
-            <div className="space-y-1.5 bg-[#FAF8F5] border border-[#E5E0D8]/60 p-3.5 rounded-xl">
+            <div 
+              onClick={() => setActiveDiagnosticDetail({
+                title: "Recruiter Visual Appeal Diagnostic",
+                description: "Measures visual layout density, reading clarity, and first-fold structure highlights.",
+                details: [
+                  `Competency Score: ${competitivenessData.recruiter_appeal}%`
+                ],
+                actionItems: [
+                  "Check attention scores in the Recruiter Intelligence Report.",
+                  "Position high-impact achievements to be visible in the top fold."
+                ]
+              })}
+              className="space-y-1.5 bg-[#FAF8F5] border border-[#E5E0D8]/60 p-3.5 rounded-xl cursor-pointer hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/40 hover:-translate-y-[2px] transition-all duration-200"
+            >
               <div className="flex justify-between items-baseline text-xs font-bold text-[#1C1008]">
                 <span>Recruiter Visual Appeal</span>
                 <span className="font-mono text-[#D97706]">{competitivenessData.recruiter_appeal}%</span>
@@ -749,6 +959,14 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
         </div>
       </div>
 
+      <DiagnosticModal
+        isOpen={!!activeDiagnosticDetail}
+        onClose={() => setActiveDiagnosticDetail(null)}
+        title={activeDiagnosticDetail?.title || ""}
+        description={activeDiagnosticDetail?.description || ""}
+        details={activeDiagnosticDetail?.details}
+        actionItems={activeDiagnosticDetail?.actionItems}
+      />
     </div>
   );
 }

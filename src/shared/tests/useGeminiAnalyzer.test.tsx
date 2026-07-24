@@ -98,8 +98,8 @@ describe("useGeminiAnalyzer", () => {
     });
 
     expect(thrownError).toBeDefined();
-    expect(thrownError.message).toBe("Server API authentication failed. Gemini API key is invalid or not configured on the server.");
-    expect(result.current.error).toBe("Server API authentication failed. Gemini API key is invalid or not configured on the server.");
+    expect(thrownError.message).toBe("Server API authentication failed. API key is invalid or not configured on the server.");
+    expect(result.current.error).toBe("Server API authentication failed. API key is invalid or not configured on the server.");
     expect(result.current.loading).toBe(false);
   });
 
@@ -125,8 +125,8 @@ describe("useGeminiAnalyzer", () => {
     });
 
     expect(thrownError).toBeDefined();
-    expect(thrownError.message).toBe("Gemini API free tier daily quota exceeded. Please check your plan/billing details, try a different API key, or try again tomorrow.");
-    expect(result.current.error).toBe("Gemini API free tier daily quota exceeded. Please check your plan/billing details, try a different API key, or try again tomorrow.");
+    expect(thrownError.message).toBe("API free tier daily quota exceeded. Please check your plan/billing details, try a different API key, or try again tomorrow.");
+    expect(result.current.error).toBe("API free tier daily quota exceeded. Please check your plan/billing details, try a different API key, or try again tomorrow.");
   });
 
   it("should handle 500 rate limiting configuration error as service temporarily unavailable rather than rate limit reached", async () => {

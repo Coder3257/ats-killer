@@ -2,15 +2,16 @@ import React, { useState, useEffect, Suspense, lazy } from "react";
 import Header from "./components/Header";
 import Hero from "./components/Hero";
 import Features from "./components/Features";
-import Analyzer from "./components/Analyzer";
 import Testimonials from "./components/Testimonials";
-import Pricing from "./components/Pricing";
 import FAQ from "./components/FAQ";
 import CTASection from "./components/CTASection";
 import Footer from "./components/Footer";
+import AuthScreen from "./components/AuthScreen";
 import { useAuth } from "./shared/contexts/AuthContext";
+import LoadingSequence from "./components/LoadingSequence";
 
-const AuthScreen = lazy(() => import("./components/AuthScreen"));
+const Analyzer = lazy(() => import("./components/Analyzer"));
+const Pricing = lazy(() => import("./components/Pricing"));
 const DashboardLayout = lazy(() => import("./components/DashboardLayout"));
 const FloatingToolkit = lazy(() => import("./components/FloatingToolkit"));
 
@@ -21,11 +22,8 @@ const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
 function LoadingFallback() {
   return (
     <div className="min-h-screen bg-[#FAF8F5] flex flex-col items-center justify-center p-6 text-center select-none font-sans">
-      <div className="space-y-4">
-        <div className="h-8 w-8 border-4 border-[#D97706]/40 border-t-[#D97706] rounded-full animate-spin mx-auto" />
-        <p className="text-xs text-[#4E453F] font-mono font-bold uppercase tracking-wider animate-pulse">
-          Loading Premium Workspace...
-        </p>
+      <div className="max-w-md mx-auto">
+        <LoadingSequence steps={["Loading..."]} />
       </div>
     </div>
   );
@@ -112,10 +110,14 @@ export default function App() {
         <Features />
 
         {/* REAL AI Analyzer — replaces fake LiveDemo */}
-        <Analyzer onAuthRequired={() => setIsAuthOpen(true)} />
+        <Suspense fallback={<div className="py-12 text-center max-w-md mx-auto"><LoadingSequence steps={["Loading..."]} /></div>}>
+          <Analyzer onAuthRequired={() => setIsAuthOpen(true)} />
+        </Suspense>
 
         <Testimonials />
-        <Pricing />
+        <Suspense fallback={<div className="py-12 text-center max-w-md mx-auto"><LoadingSequence steps={["Loading..."]} /></div>}>
+          <Pricing />
+        </Suspense>
         <FAQ />
         <CTASection />
       </main>

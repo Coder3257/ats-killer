@@ -338,7 +338,7 @@ export default function LiveDemo() {
                     {isRewriting ? (
                       <>
                         <RefreshCw className="h-4.5 w-4.5 animate-spin" />
-                        <span>Weaving Keywords via Gemini...</span>
+                        <span>Processing keywords...</span>
                       </>
                     ) : (
                       <>

@@ -1,4 +1,4 @@
-import { supabase } from "../services/supabase/client";
+// Removed supabase import; using global supabase
 
 export interface ResumeVersion {
   id: string;
@@ -19,14 +19,19 @@ export interface Resume {
   created_at: string;
 }
 
+function getSupabase() {
+  return (globalThis as any).supabase;
+}
+
 export class ResumeRepository {
   static async listResumes(userId: string): Promise<Resume[]> {
-    if (!supabase) {
+    const client = getSupabase();
+    if (!client) {
       const fallback = localStorage.getItem("RESUMES_LIST");
       return fallback ? JSON.parse(fallback) : [];
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("resumes")
       .select("*, versions:resume_versions(*)")
       .eq("user_id", userId)
@@ -37,7 +42,8 @@ export class ResumeRepository {
   }
 
   static async createResume(userId: string, name: string): Promise<Resume> {
-    if (!supabase) {
+    const client = getSupabase();
+    if (!client) {
       const list = await this.listResumes(userId);
       const newResume: Resume = {
         id: Math.random().toString(36).substring(2, 9),
@@ -51,7 +57,7 @@ export class ResumeRepository {
       return newResume;
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("resumes")
       .insert({ user_id: userId, name })
       .select()
@@ -69,7 +75,8 @@ export class ResumeRepository {
     atsScore: number,
     rawText: string
   ): Promise<ResumeVersion> {
-    if (!supabase) {
+    const client = getSupabase();
+    if (!client) {
       // Local mock fallback
       const list = localStorage.getItem("RESUMES_LIST");
       const resumes: Resume[] = list ? JSON.parse(list) : [];
@@ -91,7 +98,7 @@ export class ResumeRepository {
       return newVersion;
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("resume_versions")
       .insert({
         resume_id: resumeId,

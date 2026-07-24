@@ -51,6 +51,16 @@ type TabType = "dashboard" | "analyzer" | "applications" | "copilot" | "progress
 export default function DashboardLayout({ onLogout }: DashboardLayoutProps) {
   const [activeTab, setActiveTab] = useState<TabType>("dashboard");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const navItems = [
+    { id: "dashboard", label: "Dashboard Overview", icon: LayoutDashboard },
+    { id: "analyzer", label: "Resume Analyzer", icon: FileText },
+    { id: "applications", label: "Applications Workspace", icon: Briefcase },
+    { id: "copilot", label: "AI Career Copilot", icon: Bot },
+    { id: "progress", label: "Career Intelligence", icon: TrendingUp },
+    { id: "history", label: "Scan History", icon: History },
+    { id: "billing", label: "SaaS Pricing & Plans", icon: CreditCard },
+    { id: "settings", label: "Profile Settings", icon: Settings },
+  ] as const;
   const { user, profile, signOut, refreshProfile } = useAuth();
   const { showToast } = useToast();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -109,101 +119,26 @@ export default function DashboardLayout({ onLogout }: DashboardLayoutProps) {
 
           {/* NAV LINKS */}
           <nav className="space-y-1">
-            <button
-              onClick={() => setActiveTab("dashboard")}
-              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === "dashboard"
-                  ? "bg-[#D97706] text-white shadow-md shadow-[#D97706]/10"
-                  : "text-stone-300 hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              <span>Dashboard Overview</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("analyzer")}
-              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === "analyzer"
-                  ? "bg-[#D97706] text-white shadow-md shadow-[#D97706]/10"
-                  : "text-stone-300 hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              <FileText className="h-4 w-4" />
-              <span>Resume Analyzer</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("applications")}
-              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === "applications"
-                  ? "bg-[#D97706] text-white shadow-md shadow-[#D97706]/10"
-                  : "text-stone-300 hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              <Briefcase className="h-4 w-4" />
-              <span>Applications Workspace</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("copilot")}
-              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === "copilot"
-                  ? "bg-[#D97706] text-white shadow-md shadow-[#D97706]/10"
-                  : "text-stone-300 hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              <Bot className="h-4 w-4" />
-              <span>AI Career Copilot</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("progress")}
-              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === "progress"
-                  ? "bg-[#D97706] text-white shadow-md shadow-[#D97706]/10"
-                  : "text-stone-300 hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              <TrendingUp className="h-4 w-4" />
-              <span>Career Intelligence</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("history")}
-              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === "history"
-                  ? "bg-[#D97706] text-white shadow-md shadow-[#D97706]/10"
-                  : "text-stone-300 hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              <History className="h-4 w-4" />
-              <span>Scan History</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("billing")}
-              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === "billing"
-                  ? "bg-[#D97706] text-white shadow-md shadow-[#D97706]/10"
-                  : "text-stone-300 hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              <CreditCard className="h-4 w-4" />
-              <span>SaaS Pricing & Plans</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab("settings")}
-              className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeTab === "settings"
-                  ? "bg-[#D97706] text-white shadow-md shadow-[#D97706]/10"
-                  : "text-stone-300 hover:bg-white/5 hover:text-white"
-              }`}
-            >
-              <Settings className="h-4 w-4" />
-              <span>Profile Settings</span>
-            </button>
+            {navItems.map(item => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id as TabType);
+                    setMobileSidebarOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    activeTab === item.id
+                      ? "bg-[#D97706] text-white shadow-md shadow-[#D97706]/10"
+                      : "text-stone-300 hover:bg-white/5 hover:text-white"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
           </nav>
 
         </div>
@@ -588,7 +523,7 @@ export default function DashboardLayout({ onLogout }: DashboardLayoutProps) {
 
             {activeTab === "applications" && (
               result ? (
-                <JobSearchWorkspace initialResult={result} resume={resume} />
+                <ApplicationBoard />
               ) : (
                 <div className="bg-white border border-[#E5E0D8] rounded-3xl p-12 text-center max-w-md mx-auto space-y-5 my-12 premium-shadow">
                   <Briefcase className="h-12 w-12 text-stone-300 mx-auto" />

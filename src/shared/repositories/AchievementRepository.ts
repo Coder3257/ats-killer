@@ -1,4 +1,7 @@
-import { supabase } from "../services/supabase/client";
+// Removed direct supabase import; using global supabase helper
+function getSupabase() {
+  return (globalThis as any).supabase;
+}
 
 export interface AchievementBadge {
   id: string;
@@ -12,12 +15,13 @@ export interface AchievementBadge {
 
 export class AchievementRepository {
   static async listAchievements(userId: string): Promise<AchievementBadge[]> {
-    if (!supabase) {
+    const client = getSupabase();
+    if (!client) {
       const fallback = localStorage.getItem("ACHIEVEMENTS_LIST");
       return fallback ? JSON.parse(fallback) : [];
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("achievements")
       .select("*")
       .eq("user_id", userId)
@@ -36,7 +40,8 @@ export class AchievementRepository {
   }
 
   static async updateAchievement(userId: string, id: string, data: Partial<AchievementBadge>): Promise<void> {
-    if (!supabase) {
+    const client = getSupabase();
+    if (!client) {
       const list = await this.listAchievements(userId);
       const idx = list.findIndex(item => item.id === id);
       if (idx !== -1) {
@@ -50,7 +55,7 @@ export class AchievementRepository {
     if (data.progress !== undefined) updates.progress = data.progress;
     if (data.unlocked !== undefined) updates.unlocked = data.unlocked;
 
-    const { error } = await supabase
+    const { error } = await client
       .from("achievements")
       .update(updates)
       .eq("id", id)

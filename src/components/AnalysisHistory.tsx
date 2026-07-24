@@ -15,6 +15,8 @@ import {
 import { AnalysisRepository } from "../shared/repositories/AnalysisRepository";
 import { useAuth } from "../shared/contexts/AuthContext";
 import { useToast } from "../shared/contexts/ToastContext";
+import DiagnosticModal from "./DiagnosticModal";
+
 
 interface AnalysisHistoryProps {
   onLoadAnalysis: (analysisResult: any, resumeText: string, jdText: string) => void;
@@ -27,6 +29,8 @@ export default function AnalysisHistory({ onLoadAnalysis, setActiveTab }: Analys
   const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState<any[]>([]);
   const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
+  const [activeDiagnosticDetail, setActiveDiagnosticDetail] = useState<any>(null);
+
 
   useEffect(() => {
     async function fetchHistory() {
@@ -64,6 +68,55 @@ export default function AnalysisHistory({ onLoadAnalysis, setActiveTab }: Analys
     showToast("Historical analysis successfully loaded into workspace!", "success");
     setActiveTab("dashboard"); // Redirect to dashboard to view results
   };
+
+  const handleReanalyze = (record: any) => {
+    const resultPayload = {
+      score: record.ats_score,
+      recruiter_eyes: record.recruiter_intelligence,
+      career_roadmap: record.career_intelligence,
+      opportunity_engine: record.opportunity_engine,
+      career_dashboard: record.career_dashboard
+    };
+
+    const resumeText = record.resume_versions?.raw_text || "";
+    const jdText = record.job_description || "";
+
+    onLoadAnalysis(resultPayload, resumeText, jdText);
+    showToast("Re-running analysis on active workspace...", "success");
+    setActiveTab("analyzer");
+  };
+
+  const handleExport = (record: any) => {
+    try {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(record, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `analysis_report_${record.id}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast("Analysis report JSON exported successfully!", "success");
+    } catch (err: any) {
+      showToast("Failed to export JSON report", "error");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await AnalysisRepository.deleteAnalysis(id);
+      showToast("Historical record deleted successfully", "success");
+      const updated = history.filter(item => item.id !== id);
+      setHistory(updated);
+      if (updated.length > 0) {
+        setSelectedRecord(updated[0]);
+      } else {
+        setSelectedRecord(null);
+      }
+    } catch (err: any) {
+      showToast(err.message || "Failed to delete record", "error");
+    }
+  };
+
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-emerald-600 bg-emerald-50 border-emerald-200";
@@ -173,17 +226,53 @@ export default function AnalysisHistory({ onLoadAnalysis, setActiveTab }: Analys
                   </p>
                 </div>
 
-                <button
-                  onClick={() => handleLoad(selectedRecord)}
-                  className="w-full sm:w-auto px-4 py-2 bg-[#D97706] hover:bg-[#D97706]/95 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-[#D97706]/10 active:scale-95 transition-all"
-                >
-                  <CornerDownLeft className="h-3.5 w-3.5" />
-                  <span>Load Into Active Workspace</span>
-                </button>
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+                  <button
+                    onClick={() => handleLoad(selectedRecord)}
+                    className="px-3 py-1.5 bg-[#D97706] hover:bg-[#D97706]/95 text-white rounded-xl text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer shadow-md shadow-[#D97706]/10 active:scale-95 transition-all"
+                  >
+                    <CornerDownLeft className="h-3 w-3" />
+                    <span>Load</span>
+                  </button>
+                  <button
+                    onClick={() => handleReanalyze(selectedRecord)}
+                    className="px-3 py-1.5 bg-[#1C1008] hover:bg-stone-900 text-white rounded-xl text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer shadow-sm active:scale-95 transition-all"
+                  >
+                    <ChevronRight className="h-3 w-3" />
+                    <span>Re-Analyze</span>
+                  </button>
+                  <button
+                    onClick={() => handleExport(selectedRecord)}
+                    className="px-3 py-1.5 bg-[#FAF8F5] hover:bg-[#F5F0E8] border border-[#E5E0D8]/80 text-[#1C1008] rounded-xl text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer active:scale-95 transition-all"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    <span>Export</span>
+                  </button>
+                  <button
+                    onClick={() => handleDelete(selectedRecord.id)}
+                    className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer active:scale-95 transition-all"
+                  >
+                    <AlertCircle className="h-3 w-3" />
+                    <span>Delete</span>
+                  </button>
+                </div>
               </div>
 
               {/* Score and Verdict */}
-              <div className="bg-[#FAF8F5] border border-[#E5E0D8]/60 rounded-2xl p-4 flex items-center gap-4">
+              <div 
+                onClick={() => setActiveDiagnosticDetail({
+                  title: `Historical Score Analysis: ${selectedRecord.ats_score}%`,
+                  description: selectedRecord.recruiter_intelligence?.verdict || "This analysis matches your resume parameters and lists key recommendations to improve compatibility.",
+                  details: [
+                    `Overall ATS Score: ${selectedRecord.ats_score}%`,
+                    `Analyzed: ${new Date(selectedRecord.created_at).toLocaleString()}`
+                  ],
+                  actionItems: [
+                    "To view the full interactive dashboard for this scan, click 'Load Into Active Workspace' at the top right."
+                  ]
+                })}
+                className="bg-[#FAF8F5] border border-[#E5E0D8]/60 rounded-2xl p-4 flex items-center gap-4 cursor-pointer hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/40 transition-all duration-200"
+              >
                 <div className={`h-16 w-16 shrink-0 rounded-full flex items-center justify-center border font-display font-black text-lg ${getScoreColor(selectedRecord.ats_score)}`}>
                   {selectedRecord.ats_score}%
                 </div>
@@ -220,6 +309,14 @@ export default function AnalysisHistory({ onLoadAnalysis, setActiveTab }: Analys
           )}
         </div>
       </div>
+      <DiagnosticModal
+        isOpen={!!activeDiagnosticDetail}
+        onClose={() => setActiveDiagnosticDetail(null)}
+        title={activeDiagnosticDetail?.title || ""}
+        description={activeDiagnosticDetail?.description || ""}
+        details={activeDiagnosticDetail?.details}
+        actionItems={activeDiagnosticDetail?.actionItems}
+      />
     </div>
   );
 }

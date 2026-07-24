@@ -1,4 +1,7 @@
-import { supabase } from "../services/supabase/client";
+// Removed direct supabase import; using global supabase helper
+function getSupabase() {
+  return (globalThis as any).supabase;
+}
 
 export interface ApplicationTrackerItem {
   id: string;
@@ -23,12 +26,13 @@ export interface ApplicationTrackerItem {
 
 export class ApplicationRepository {
   static async listApplications(userId: string): Promise<ApplicationTrackerItem[]> {
-    if (!supabase) {
+    const client = getSupabase();
+    if (!client) {
       const fallback = localStorage.getItem("APPLICATIONS_LIST");
       return fallback ? JSON.parse(fallback) : [];
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("job_applications")
       .select("*")
       .eq("user_id", userId)
@@ -59,7 +63,8 @@ export class ApplicationRepository {
   }
 
   static async createApplication(userId: string, data: Omit<ApplicationTrackerItem, "id">): Promise<ApplicationTrackerItem> {
-    if (!supabase) {
+    const client = getSupabase();
+    if (!client) {
       const list = await this.listApplications(userId);
       const newItem: ApplicationTrackerItem = {
         id: Math.random().toString(36).substring(2, 9),
@@ -83,7 +88,7 @@ export class ApplicationRepository {
       timeline: data.timeline || [],
     };
 
-    const { data: record, error } = await supabase
+    const { data: record, error } = await client
       .from("job_applications")
       .insert(payload)
       .select()
@@ -105,7 +110,8 @@ export class ApplicationRepository {
   }
 
   static async updateApplication(userId: string, id: string, data: Partial<ApplicationTrackerItem>): Promise<void> {
-    if (!supabase) {
+    const client = getSupabase();
+    if (!client) {
       const list = await this.listApplications(userId);
       const idx = list.findIndex(item => item.id === id);
       if (idx !== -1) {
@@ -123,7 +129,7 @@ export class ApplicationRepository {
     if (data.checklist) updates.attachments = { checklist: data.checklist };
     if (data.timeline) updates.timeline = data.timeline;
 
-    const { error } = await supabase
+    const { error } = await client
       .from("job_applications")
       .update(updates)
       .eq("id", id)
@@ -133,14 +139,15 @@ export class ApplicationRepository {
   }
 
   static async deleteApplication(userId: string, id: string): Promise<void> {
-    if (!supabase) {
+    const client = getSupabase();
+    if (!client) {
       const list = await this.listApplications(userId);
       const filtered = list.filter(item => item.id !== id);
       localStorage.setItem("APPLICATIONS_LIST", JSON.stringify(filtered));
       return;
     }
 
-    const { error } = await supabase
+    const { error } = await client
       .from("job_applications")
       .delete()
       .eq("id", id)

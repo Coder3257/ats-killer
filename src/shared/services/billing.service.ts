@@ -1,4 +1,7 @@
-import { supabase } from "./supabase/client";
+// Removed direct supabase import; using global helper
+function getSupabase() {
+  return (globalThis as any).supabase;
+}
 
 export interface SubscriptionDetails {
   status: string;
@@ -8,11 +11,12 @@ export interface SubscriptionDetails {
 
 export class BillingService {
   static async getSubscription(userId: string): Promise<SubscriptionDetails> {
-    if (!supabase) {
+    const client = getSupabase();
+    if (!client) {
       return { status: "active", priceId: "premium_monthly", currentPeriodEnd: new Date(Date.now() + 30 * 86400 * 1000).toISOString() };
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("subscriptions")
       .select("*")
       .eq("user_id", userId)

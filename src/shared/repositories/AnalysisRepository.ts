@@ -1,5 +1,8 @@
-import { supabase } from "../services/supabase/client";
 import type { AnalysisResult } from "../types/geminiAnalyzerTypes";
+
+function getSupabase() {
+  return (globalThis as any).supabase;
+}
 
 export interface AnalysisRecord {
   id: string;
@@ -32,7 +35,8 @@ export class AnalysisRepository {
       career_dashboard: result.career_dashboard,
     };
 
-    if (!supabase) {
+    const client = getSupabase();
+    if (!client) {
       const fallback = localStorage.getItem("ANALYSES_LIST");
       const list: AnalysisRecord[] = fallback ? JSON.parse(fallback) : [];
       const newRecord: AnalysisRecord = {
@@ -45,7 +49,7 @@ export class AnalysisRepository {
       return newRecord;
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("analyses")
       .insert(record)
       .select()
@@ -56,12 +60,13 @@ export class AnalysisRepository {
   }
 
   static async listAnalyses(userId: string): Promise<AnalysisRecord[]> {
-    if (!supabase) {
+    const client = getSupabase();
+    if (!client) {
       const fallback = localStorage.getItem("ANALYSES_LIST");
       return fallback ? JSON.parse(fallback) : [];
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("analyses")
       .select("*")
       .eq("user_id", userId)
@@ -72,7 +77,8 @@ export class AnalysisRepository {
   }
 
   static async listAnalysesWithResume(userId: string): Promise<any[]> {
-    if (!supabase) {
+    const client = getSupabase();
+    if (!client) {
       const fallback = localStorage.getItem("ANALYSES_LIST");
       const list = fallback ? JSON.parse(fallback) : [];
       return list.map((record: any) => ({
@@ -84,7 +90,7 @@ export class AnalysisRepository {
       }));
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("analyses")
       .select("*, resume_versions(version_name, raw_text)")
       .eq("user_id", userId)
@@ -92,5 +98,23 @@ export class AnalysisRepository {
 
     if (error) throw error;
     return data || [];
+  }
+
+  static async deleteAnalysis(id: string): Promise<void> {
+    const client = getSupabase();
+    if (!client) {
+      const fallback = localStorage.getItem("ANALYSES_LIST");
+      if (fallback) {
+        const list = JSON.parse(fallback);
+        const filtered = list.filter((item: any) => item.id !== id);
+        localStorage.setItem("ANALYSES_LIST", JSON.stringify(filtered));
+      }
+      return;
+    }
+    const { error } = await client
+      .from("analyses")
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
   }
 }

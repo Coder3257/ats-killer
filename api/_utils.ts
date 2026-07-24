@@ -4,7 +4,12 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 const supabaseUrl = (process.env.VITE_SUPABASE_URL || "").trim();
 const supabaseAnonKey = (process.env.VITE_SUPABASE_ANON_KEY || "").trim();
 
-const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+const localSupabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUrl, supabaseAnonKey) : null;
+
+function getSupabase() {
+  const globalClient = (globalThis as any).supabase;
+  return globalClient !== undefined ? globalClient : localSupabase;
+}
 
 export function getSupabaseAdmin() {
   const serviceRoleKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
@@ -28,13 +33,14 @@ export async function verifyAuth(req: VercelRequest, res: VercelResponse): Promi
   }
 
   const token = authHeader.split(" ")[1];
-  if (!supabase) {
+  const client = getSupabase();
+  if (!client) {
     res.status(401).json({ error: "Server authentication misconfigured." });
     return null;
   }
 
   try {
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    const { data: { user }, error } = await client.auth.getUser(token);
     if (!error && user) {
       return user.id;
     }
@@ -47,7 +53,8 @@ export async function verifyAuth(req: VercelRequest, res: VercelResponse): Promi
 }
 
 export async function rateLimit(userId: string, res: VercelResponse, req: VercelRequest): Promise<boolean> {
-  if (!supabase) {
+  const baseClient = getSupabase();
+  if (!baseClient) {
     return false;
   }
 
@@ -65,7 +72,7 @@ export async function rateLimit(userId: string, res: VercelResponse, req: Vercel
             persistSession: false,
           },
         })
-      : supabase;
+      : baseClient;
 
     // Call the atomic increment RPC function
     const { data: isLimited, error } = await client.rpc("increment_rate_limit", {

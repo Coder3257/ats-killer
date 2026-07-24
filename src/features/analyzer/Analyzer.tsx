@@ -29,12 +29,16 @@ import {
   AnalysisResult,
   QuickWin,
 } from "../../hooks/useGeminiAnalyzer";
-import CareerIntelligence from "../career/CareerIntelligence";
-import JobSearchWorkspace from "../jobs/JobSearchWorkspace";
-import CareerDashboard from "../dashboard/CareerDashboard";
-import AICareerCopilot from "../copilot/AICareerCopilot";
-import AIOpportunityEngine from "./AIOpportunityEngine";
 import { supabase } from "../../shared/services/supabase/client";
+import { LoadingSequence, DiagnosticModal } from "../../components";
+import { lazy } from "react";
+
+const CareerIntelligence = lazy(() => import("../career/CareerIntelligence"));
+const JobSearchWorkspace = lazy(() => import("../jobs/JobSearchWorkspace"));
+const CareerDashboard = lazy(() => import("../dashboard/CareerDashboard"));
+const AICareerCopilot = lazy(() => import("../copilot/AICareerCopilot"));
+const AIOpportunityEngine = lazy(() => import("./AIOpportunityEngine"));
+
 
 // Custom useCountUp hook inside the file
 function useCountUp(target: number, duration: number = 1600) {
@@ -109,6 +113,14 @@ export default function Analyzer({ onAuthRequired }: AnalyzerProps) {
       copied: boolean;
     };
   }>({});
+
+  // Diagnostic Modal State
+  const [activeDiagnosticDetail, setActiveDiagnosticDetail] = useState<{
+    title: string;
+    description: string;
+    details: string[];
+    actionItems: string[];
+  } | null>(null);
 
   // References for scrolling
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -416,8 +428,7 @@ export default function Analyzer({ onAuthRequired }: AnalyzerProps) {
                   onChange={(e) => setResume(e.target.value)}
                   placeholder={`Paste your resume here — plain text works best.
 
-Include your experience, skills, education, and achievements.
-The more detail you provide, the more accurate the analysis.`}
+IncludeThank you for choosing <strong>ATS Killer</strong>. Since our Service utilizes real-time API integrations and cloud resources (AI analysis API) to perform analysis...`}
                   className="bg-[#F5F0E8] h-64 rounded-2xl p-4 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-[#D97706]/30 text-[#1C1008] w-full font-sans leading-relaxed"
                 />
               </div>
@@ -458,28 +469,25 @@ qualifications. Don't trim it — every word matters.`}
         {/* Analyze Button (Hidden when result exists) */}
         {!result && (
           <div className="flex flex-col items-center mt-8 space-y-3">
-            <button
-              onClick={handleAnalyze}
-              disabled={loading || !isReadyToAnalyze}
-              className="w-full max-w-[480px] bg-[#1C1008] text-white py-5 rounded-2xl text-lg font-bold hover:-translate-y-1 hover:shadow-lg active:scale-[0.98] transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 premium-shadow"
-            >
-              {loading ? (
-                <>
-                  <RotateCcw className="h-5 w-5 animate-spin text-[#D97706]" />
-                  <span>Analyzing with Gemini AI...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-5 w-5 text-[#D97706]" />
-                  <span>Analyze My Resume →</span>
-                </>
-              )}
-            </button>
+            {loading ? (
+              <div className="w-full max-w-[480px] py-4">
+                <LoadingSequence steps={["Scanning keywords...", "Checking formatting...", "Matching skills...", "Finalizing report..."]} />
+              </div>
+            ) : (
+              <button
+                onClick={handleAnalyze}
+                disabled={!isReadyToAnalyze}
+                className="w-full max-w-[480px] bg-[#1C1008] text-white py-5 rounded-2xl text-lg font-bold hover:-translate-y-1 hover:shadow-lg active:scale-[0.98] transition-all duration-200 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 premium-shadow"
+              >
+                <Sparkles className="h-5 w-5 text-[#D97706]" />
+                <span>Analyze My Resume →</span>
+              </button>
+            )}
 
             <p className="text-xs text-[#4E453F]/70 font-semibold">
               {!isReadyToAnalyze
                 ? "Paste your resume and job description above"
-                : "Ready — Gemini 2.5 Flash will analyze in ~10 seconds"}
+                : "Ready — AI analysis model will process in ~10 seconds"}
             </p>
           </div>
         )}
@@ -506,10 +514,29 @@ qualifications. Don't trim it — every word matters.`}
           <div ref={resultsRef} className="max-w-4xl mx-auto space-y-8 mt-10 animate-fade-in-up">
 
             {/* CARD 1: ATS SCORE */}
-            <div className="bg-white border border-[#E5E0D8] rounded-3xl p-7 premium-shadow border-l-4 border-l-[#D97706] hover:-translate-y-[3px] transition-transform duration-200 ease-out">
-              <h3 className="text-xl font-extrabold text-[#1C1008] tracking-tight mb-6">
-                ATS Compatibility Score
-              </h3>
+            <div 
+              onClick={() => setActiveDiagnosticDetail({
+                title: "ATS Compatibility Score Calibration",
+                description: `Your overall ATS compatibility score is calibrated at ${result.score}/100.`,
+                details: [
+                  `Keyword Match percentage: ${result.keyword_match_percent}%`,
+                  `Formatting verification score: ${result.format_score}%`,
+                  `Readability grade: ${result.readability}`
+                ],
+                actionItems: [
+                  "Address the missing keywords in experience sections.",
+                  "Resolve structural warnings listed in why you are being ghosted.",
+                  "Re-verify margins and font sizes before final submittal."
+                ]
+              })}
+              className="bg-white border border-[#E5E0D8] rounded-3xl p-7 premium-shadow border-l-4 border-l-[#D97706] hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/10 hover:-translate-y-[3px] transition-all duration-200 ease-out cursor-pointer group"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-extrabold text-[#1C1008] tracking-tight group-hover:text-[#D97706] transition-colors">
+                  ATS Compatibility Score
+                </h3>
+                <span className="text-[10px] font-mono text-[#D97706] font-bold group-hover:underline">Click to view diagnostics →</span>
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
                 {/* SVG Radial Score Ring */}
@@ -607,18 +634,38 @@ qualifications. Don't trim it — every word matters.`}
             </div>
 
             {/* CARD 2: REJECTION REASONS */}
-            <div className="bg-white border border-[#E5E0D8] rounded-3xl p-7 premium-shadow border-l-4 border-l-[#EF4444] hover:-translate-y-[3px] transition-transform duration-200 ease-out relative">
+            <div 
+              onClick={(e) => {
+                // Prevent opening modal when clicking fix or copy buttons inside the card
+                const target = e.target as HTMLElement;
+                if (target.closest("button")) return;
+                setActiveDiagnosticDetail({
+                  title: "Ghosting / Rejection Risks Diagnostics",
+                  description: "ATS scoring engines detect layout, syntax, keyword density, and formatting anomalies that result in automated rejection filters.",
+                  details: result.rejection_reasons.map(r => `[${r.severity} Risk] ${r.title}: ${r.description}`),
+                  actionItems: [
+                    "Perform layout formatting validation checks.",
+                    "Use the AI bullet optimizer to rewrite problem sections.",
+                    "Remove tables, images, or special icons inside resume header."
+                  ]
+                });
+              }}
+              className="bg-white border border-[#E5E0D8] rounded-3xl p-7 premium-shadow border-l-4 border-l-[#EF4444] hover:border-red-400/40 hover:bg-[#F5F0E8]/10 hover:-translate-y-[3px] transition-all duration-200 ease-out relative cursor-pointer group"
+            >
               <span className="absolute top-7 right-7 bg-[#EDE9FE] text-[#7C3AED] text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
                 Unique Feature
               </span>
 
-              <div className="mb-6">
-                <h3 className="text-xl font-extrabold text-[#1C1008] tracking-tight">
-                  Why You're Being Ghosted
-                </h3>
-                <p className="text-xs text-[#4E453F] mt-1 font-medium">
-                  These signals cause automatic rejection before a human sees your application.
-                </p>
+              <div className="mb-6 flex justify-between items-start">
+                <div>
+                  <h3 className="text-xl font-extrabold text-[#1C1008] tracking-tight group-hover:text-[#EF4444] transition-colors">
+                    Why You're Being Ghosted
+                  </h3>
+                  <p className="text-xs text-[#4E453F] mt-1 font-medium">
+                    These signals cause automatic rejection before a human sees your application.
+                  </p>
+                </div>
+                <span className="text-[10px] font-mono text-[#EF4444] font-bold group-hover:underline self-center shrink-0">Click to view diagnostics →</span>
               </div>
 
               <div className="space-y-4">
@@ -646,23 +693,19 @@ qualifications. Don't trim it — every word matters.`}
                           <p className="text-xs text-[#4E453F] mt-1 leading-relaxed">{reason.description}</p>
 
                           {/* Button below title/description */}
-                          <button
-                            onClick={() => handleFixIssue(idx, reason.title, reason.description)}
-                            disabled={isFixing}
-                            className="mt-3 bg-[#D97706] text-[#1C1008] hover:bg-[#D97706]/90 disabled:opacity-50 active:scale-[0.98] transition-all font-bold text-[10px] px-3 py-1.5 rounded-lg flex items-center gap-1 shrink-0 cursor-pointer duration-150 w-full sm:w-auto"
-                          >
-                            {isFixing ? (
-                              <>
-                                <RotateCcw className="h-3.5 w-3.5 animate-spin" />
-                                <span>Fixing...</span>
-                              </>
-                            ) : (
-                              <>
-                                <Sparkles className="h-3.5 w-3.5" />
-                                <span>Fix This</span>
-                              </>
-                            )}
-                          </button>
+                          {isFixing ? (
+                            <div className="mt-3 py-1">
+                              <LoadingSequence steps={["Analyzing rejection issue...", "Formulating correction...", "Re-writing bullet...", "Applying fix..."]} />
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleFixIssue(idx, reason.title, reason.description)}
+                              className="mt-3 bg-[#D97706] text-[#1C1008] hover:bg-[#D97706]/90 active:scale-[0.98] transition-all font-bold text-[10px] px-3 py-1.5 rounded-lg flex items-center gap-1 shrink-0 cursor-pointer duration-150 w-full sm:w-auto"
+                            >
+                              <Sparkles className="h-3.5 w-3.5" />
+                              <span>Fix This</span>
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -749,18 +792,33 @@ qualifications. Don't trim it — every word matters.`}
             </div>
 
             {/* CARD 3: COMPANY ARCHETYPE */}
-            <div className="bg-white border border-[#E5E0D8] rounded-3xl p-7 premium-shadow border-l-4 border-l-[#7C3AED] hover:-translate-y-[3px] transition-transform duration-200 ease-out relative">
+            <div 
+              onClick={() => setActiveDiagnosticDetail({
+                title: `Company Culture & Archetype: ${result.company_archetype.label}`,
+                description: "We parsed the phrasing, priority orders, and explicit keywords in the job description to determine company culture requirements.",
+                details: result.company_archetype.insights.map(ins => `${ins.icon} ${ins.title}: ${ins.explanation}`),
+                actionItems: [
+                  "Calibrate cover letter tone to match this company's culture.",
+                  "Structure behavioral interviews based on core values described in these insights.",
+                  "Ensure project descriptions reflect matching engineering scales."
+                ]
+              })}
+              className="bg-white border border-[#E5E0D8] rounded-3xl p-7 premium-shadow border-l-4 border-l-[#7C3AED] hover:border-purple-400/40 hover:bg-[#F5F0E8]/10 hover:-translate-y-[3px] transition-all duration-200 ease-out relative cursor-pointer group"
+            >
               <span className="absolute top-7 right-7 bg-[#EDE9FE] text-[#7C3AED] text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
                 Unique Feature
               </span>
 
-              <div className="mb-6">
-                <h3 className="text-xl font-extrabold text-[#1C1008] tracking-tight">
-                  What This Company Actually Wants
-                </h3>
-                <p className="text-xs text-[#4E453F] mt-1 font-medium">
-                  Decoded from the job description's language patterns, tone, and word frequency.
-                </p>
+              <div className="mb-6 flex justify-between items-start">
+                <div>
+                  <h3 className="text-xl font-extrabold text-[#1C1008] tracking-tight group-hover:text-[#7C3AED] transition-colors">
+                    What This Company Actually Wants
+                  </h3>
+                  <p className="text-xs text-[#4E453F] mt-1 font-medium">
+                    Decoded from the job description's language patterns, tone, and word frequency.
+                  </p>
+                </div>
+                <span className="text-[10px] font-mono text-[#7C3AED] font-bold group-hover:underline self-center shrink-0">Click to view diagnostics →</span>
               </div>
 
               <div>
@@ -926,18 +984,19 @@ qualifications. Don't trim it — every word matters.`}
                             <p className="text-xs text-white/80 leading-relaxed font-medium italic pr-4">"{win.original_context}"</p>
                           </div>
 
-                          <button
-                            onClick={() => handleRewriteBullet(idx, win.original_context, win.description)}
-                            disabled={isRewriting}
-                            className="bg-[#D97706] text-[#1C1008] hover:bg-[#D97706]/90 disabled:opacity-50 transition-all font-bold text-[10px] px-3 py-1.5 rounded-lg flex items-center gap-1 shrink-0 cursor-pointer duration-150 active:scale-[0.98]"
-                          >
-                            {isRewriting ? (
-                              <RotateCcw className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
+                          {isRewriting ? (
+                            <div className="py-1">
+                              <LoadingSequence steps={["Scanning bullet...", "Polishing vocabulary...", "Applying metrics..."]} />
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleRewriteBullet(idx, win.original_context, win.description)}
+                              className="bg-[#D97706] text-[#1C1008] hover:bg-[#D97706]/90 transition-all font-bold text-[10px] px-3 py-1.5 rounded-lg flex items-center gap-1 shrink-0 cursor-pointer duration-150 active:scale-[0.98]"
+                            >
                               <Sparkles className="h-3.5 w-3.5" />
-                            )}
-                            <span>Rewrite Bullet</span>
-                          </button>
+                              <span>Rewrite Bullet</span>
+                            </button>
+                          )}
                         </div>
                       )}
 
@@ -1010,18 +1069,37 @@ qualifications. Don't trim it — every word matters.`}
 
             {/* CARD 6: ATS SIMULATOR CARD */}
             {result.ats_simulation && result.ats_simulation.length > 0 && (
-              <div className="bg-white border border-[#E5E0D8] rounded-3xl p-7 premium-shadow border-l-4 border-l-[#D97706] hover:-translate-y-[3px] transition-transform duration-200 ease-out relative">
+              <div 
+                onClick={(e) => {
+                  const target = e.target as HTMLElement;
+                  if (target.closest(".grid > div")) return; // ignore if user clicks sub-system cards
+                  setActiveDiagnosticDetail({
+                    title: "ATS Sandbox Engine Simulation",
+                    description: "Simulation of how standard enterprise Applicant Tracking Systems (e.g. Workday, Taleo, Greenhouse) parse and score your resume structure.",
+                    details: result.ats_simulation.map(ats => `${ats.name}: Score ${ats.score}/100 [Status: ${ats.status}] - ${ats.biggest_issue}`),
+                    actionItems: [
+                      "Verify keyword densities align above the 70% threshold.",
+                      "Test layout against the PDF standard structure.",
+                      "Ensure fonts and layouts use standard clean formats."
+                    ]
+                  });
+                }}
+                className="bg-white border border-[#E5E0D8] rounded-3xl p-7 premium-shadow border-l-4 border-l-[#D97706] hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/10 hover:-translate-y-[3px] transition-all duration-200 ease-out relative cursor-pointer group"
+              >
                 <span className="absolute top-7 right-7 bg-[#FEF3C7] text-[#D97706] text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
                   ATS Simulation
                 </span>
 
-                <div className="mb-6">
-                  <h3 className="text-xl font-extrabold text-[#1C1008] tracking-tight">
-                    ATS Sandbox Engine
-                  </h3>
-                  <p className="text-xs text-[#4E453F] mt-1 font-medium">
-                    We ran your resume through the parsing filters of the five most widely used Applicant Tracking Systems.
-                  </p>
+                <div className="mb-6 flex justify-between items-start">
+                  <div>
+                    <h3 className="text-xl font-extrabold text-[#1C1008] tracking-tight group-hover:text-[#D97706] transition-colors">
+                      ATS Sandbox Engine
+                    </h3>
+                    <p className="text-xs text-[#4E453F] mt-1 font-medium">
+                      ATS Killer is an AI-powered resume analysis and optimization platform. It utilizes the AI analysis API to scan resumes against target job descriptions, provide matching scores, identify skill gaps, and suggest optimizations to align your resume with Applicant Tracking Systems (ATS).
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-mono text-[#D97706] font-bold group-hover:underline self-center shrink-0">Click to view diagnostics →</span>
                 </div>
 
                 {/* Grid of 5 ATS cards */}
@@ -1124,13 +1202,29 @@ qualifications. Don't trim it — every word matters.`}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 {/* MODULE 1: Recruiter Eyes™ */}
-                <div className="bg-white border border-[#E5E0D8] rounded-3xl p-6 premium-shadow border-l-4 border-l-[#7C3AED] flex flex-col justify-between hover:-translate-y-[3px] transition-all duration-200">
+                <div 
+                  onClick={() => setActiveDiagnosticDetail({
+                    title: "Recruiter Intelligence Gaze simulation",
+                    description: "Simulation of where a recruiter's eyes focus during the critical first 6-second scan of your resume structure.",
+                    details: [
+                      `First Noticed: ${result.recruiter_eyes.first_noticed.join(", ")}`,
+                      `Ignored items: ${result.recruiter_eyes.ignored_items.join(", ")}`,
+                      `Weakest section: ${result.recruiter_eyes.weakest_section}`,
+                      `Strongest section: ${result.recruiter_eyes.strongest_section}`,
+                      `Verdict: ${result.recruiter_eyes.verdict}`
+                    ],
+                    actionItems: [
+                      "Relocate important experience parameters to the top fold.",
+                      "Verify that dates and role titles are highly legible.",
+                      "Clean up formatting in ignored/weakest sections."
+                    ]
+                  })}
+                  className="bg-white border border-[#E5E0D8] rounded-3xl p-6 premium-shadow border-l-4 border-l-[#7C3AED] flex flex-col justify-between hover:border-purple-400/40 hover:bg-[#F5F0E8]/10 hover:-translate-y-[3px] transition-all duration-200 cursor-pointer group"
+                >
                   <div>
                     <div className="flex items-center justify-between border-b border-[#E5E0D8]/60 pb-3 mb-4">
-                      <h4 className="text-sm font-extrabold text-[#1C1008]">Recruiter Eyes™</h4>
-                      <span className="text-[9px] font-mono font-bold text-[#7C3AED] bg-[#EDE9FE] px-2 py-0.5 rounded">
-                        6-Second Gaze Simulation
-                      </span>
+                      <h4 className="text-sm font-extrabold text-[#1C1008] group-hover:text-[#7C3AED] transition-colors">Recruiter Eyes™</h4>
+                      <span className="text-[9px] font-mono font-bold text-[#7C3AED] group-hover:underline">Click to view diagnostics →</span>
                     </div>
 
                     <div className="space-y-3.5">
@@ -1359,20 +1453,23 @@ qualifications. Don't trim it — every word matters.`}
 
             </div>
 
-            {/* Career Intelligence Section */}
-            <CareerIntelligence result={result} animate={animateBars} />
+            {/* Results sections wrapped in Suspense */}
+            <Suspense fallback={<div className="max-w-md mx-auto my-12"><LoadingSequence steps={["Loading..."]} /></div>}>
+              {/* Career Intelligence Section */}
+              <CareerIntelligence result={result} animate={animateBars} />
 
-            {/* Job Search Workspace Section */}
-            <JobSearchWorkspace initialResult={result} resume={resume} />
+              {/* Job Search Workspace Section */}
+              <JobSearchWorkspace initialResult={result} resume={resume} />
 
-            {/* Career Dashboard Section */}
-            <CareerDashboard result={result} animate={animateBars} onNavigateTab={() => { }} />
+              {/* Career Dashboard Section */}
+              <CareerDashboard result={result} animate={animateBars} onNavigateTab={() => { }} />
 
-            {/* AI Career Copilot Section */}
-            <AICareerCopilot result={result} resume={resume} />
+              {/* AI Career Copilot Section */}
+              <AICareerCopilot result={result} resume={resume} />
 
-            {/* AI Opportunity Engine Section */}
-            <AIOpportunityEngine result={result} animate={animateBars} />
+              {/* AI Opportunity Engine Section */}
+              <AIOpportunityEngine result={result} animate={animateBars} />
+            </Suspense>
 
             {/* Reset Button */}
             <div className="flex justify-center mt-10">
@@ -1387,6 +1484,16 @@ qualifications. Don't trim it — every word matters.`}
 
           </div>
         )}
+
+      {/* DIAGNOSTIC DETAIL MODAL */}
+      <DiagnosticModal
+        isOpen={!!activeDiagnosticDetail}
+        onClose={() => setActiveDiagnosticDetail(null)}
+        title={activeDiagnosticDetail?.title || ""}
+        description={activeDiagnosticDetail?.description || ""}
+        details={activeDiagnosticDetail?.details}
+        actionItems={activeDiagnosticDetail?.actionItems}
+      />
 
       </div>
     </section>

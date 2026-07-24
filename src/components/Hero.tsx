@@ -60,7 +60,7 @@ export default function Hero() {
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#D97706]/10 border border-[#D97706]/20 shadow-xs">
               <span className="flex h-2 w-2 rounded-full bg-[#D97706] animate-pulse" />
               <span className="text-xs font-mono font-semibold text-[#D97706] tracking-wide uppercase">
-                Now Powered by Gemini 1.5 Pro
+                Now Powered by AI 1.5 Pro
               </span>
             </div>
 
@@ -260,7 +260,7 @@ export default function Hero() {
                   {isOptimizing ? (
                     <>
                       <span className="animate-spin rounded-full h-4 w-4 border-2 border-[#FAF8F5] border-t-transparent" />
-                      <span>Gemini Rewriting...</span>
+                      <span>Optimizing resume...</span>
                     </>
                   ) : (
                     <>

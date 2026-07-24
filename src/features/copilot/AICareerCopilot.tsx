@@ -34,6 +34,9 @@ import {
   CareerKnowledgeGraph,
   useGeminiAnalyzer,
 } from "../../hooks/useGeminiAnalyzer";
+import DiagnosticModal from "../../components/DiagnosticModal";
+import { useAuth } from "../../shared/contexts/AuthContext";
+
 
 interface AICareerCopilotProps {
   result: AnalysisResult;
@@ -49,9 +52,19 @@ interface ChatMessage {
 
 export default function AICareerCopilot({ result, resume }: AICareerCopilotProps) {
   const { chatWithCopilot } = useGeminiAnalyzer();
+  const { profile } = useAuth();
+  const userName = profile?.full_name || "Premium Guest";
+
+  const welcomeMessage = useMemo(() => {
+    let msg = result.career_chat?.welcome_message || "Welcome back! I am your AI Career Copilot. How can I guide you today?";
+    msg = msg.replace(/\bJohn Doe\b/gi, userName).replace(/\bJohn\b/gi, userName);
+    return msg;
+  }, [result.career_chat?.welcome_message, userName]);
 
   // Active sub-section tab
   const [activeTab, setActiveTab] = useState<"chat" | "resumes" | "applications" | "interviews" | "knowledge">("chat");
+  const [activeDiagnosticDetail, setActiveDiagnosticDetail] = useState<any>(null);
+
 
   // -------------------------------------------------------------
   // STATE DEFINITIONS WITH LOCALSTORAGE SYNCHRONIZATION
@@ -112,7 +125,7 @@ export default function AICareerCopilot({ result, resume }: AICareerCopilotProps
       {
         id: "msg-1",
         sender: "copilot",
-        text: result.career_chat?.welcome_message || "Welcome back! I am your AI Career Copilot. How can I guide you today?",
+        text: welcomeMessage,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       }
     ];
@@ -159,7 +172,7 @@ export default function AICareerCopilot({ result, resume }: AICareerCopilotProps
         {
           id: "msg-1",
           sender: "copilot",
-          text: result.career_chat?.welcome_message || "Welcome back! I am your AI Career Copilot. How can I guide you today?",
+          text: welcomeMessage,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         }
       ]);
@@ -248,7 +261,7 @@ export default function AICareerCopilot({ result, resume }: AICareerCopilotProps
       const errorMsg: ChatMessage = {
         id: `msg-error-${Date.now()}`,
         sender: "copilot",
-        text: `Error connecting to Gemini: ${e?.message || "Verify server configuration and network connection."}`,
+        text: `Error connecting to the service: ${e?.message || "Verify server configuration and network connection."}`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setChatHistory(prev => [...prev, errorMsg]);
@@ -550,7 +563,19 @@ export default function AICareerCopilot({ result, resume }: AICareerCopilotProps
 
                 <div className="space-y-3">
                   {resumeMemory.map((item, idx) => (
-                    <div key={idx} className="bg-[#FAF8F5] border border-[#E5E0D8]/60 p-4 rounded-2xl space-y-3">
+                    <div 
+                      key={idx} 
+                      onClick={() => setActiveDiagnosticDetail({
+                        title: `Resume Version Memory: ${item.version_name}`,
+                        description: `This version was analyzed on ${item.date}.`,
+                        details: [
+                          `ATS compatibility score: ${item.ats_score}/100`,
+                          `Notes: ${item.notes || "None"}`
+                        ],
+                        actionItems: item.improvements.map(imp => `Completed improvement: ${imp}`)
+                      })}
+                      className="bg-[#FAF8F5] border border-[#E5E0D8]/60 p-4 rounded-2xl space-y-3 cursor-pointer hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/40 hover:-translate-y-[2px] transition-all duration-200"
+                    >
                       <div className="flex justify-between items-baseline">
                         <span className="text-xs font-extrabold text-[#1C1008]">{item.version_name}</span>
                         <span className="text-[9px] font-mono font-extrabold text-stone-400">{item.date}</span>
@@ -730,10 +755,23 @@ export default function AICareerCopilot({ result, resume }: AICareerCopilotProps
                 </div>
               )}
 
-              {/* Table or Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {applicationMemory.map((app) => (
-                  <div key={app.id} className="bg-white border border-[#E5E0D8] rounded-3xl p-5 premium-shadow flex justify-between relative hover:shadow-md transition-shadow">
+                  <div 
+                    key={app.id} 
+                    onClick={() => setActiveDiagnosticDetail({
+                      title: `Application Memory: ${app.company}`,
+                      description: `Tracked application for ${app.role}.`,
+                      details: [
+                        `Status: ${app.status}`,
+                        `Resume version sent: ${app.resume_version || "Not specified"}`
+                      ],
+                      actionItems: [
+                        `Notes: ${app.interview_notes || "No notes logged yet."}`
+                      ]
+                    })}
+                    className="bg-white border border-[#E5E0D8] rounded-3xl p-5 premium-shadow flex justify-between relative hover:shadow-md hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/10 hover:-translate-y-[2px] transition-all cursor-pointer group"
+                  >
                     <div className="space-y-3">
                       <div>
                         <span className={`text-[8px] font-mono font-bold px-2 py-0.5 rounded-full border ${
@@ -756,7 +794,10 @@ export default function AICareerCopilot({ result, resume }: AICareerCopilotProps
                     </div>
 
                     <button
-                      onClick={() => handleDeleteApplication(app.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteApplication(app.id);
+                      }}
                       className="text-stone-300 hover:text-rose-600 shrink-0 cursor-pointer self-start p-1.5"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -787,7 +828,22 @@ export default function AICareerCopilot({ result, resume }: AICareerCopilotProps
 
                 <div className="space-y-4">
                   {interviewMemory.map((item, idx) => (
-                    <div key={idx} className="bg-[#FAF8F5] border border-[#E5E0D8]/60 p-5 rounded-2xl space-y-4">
+                    <div 
+                      key={idx} 
+                      onClick={() => setActiveDiagnosticDetail({
+                        title: `Interview Memory: ${item.company}`,
+                        description: `Interview rounds: ${item.rounds.join(" → ")}. Date: ${item.date}`,
+                        details: [
+                          ...item.technical_questions.map(q => `Technical: "${q}"`),
+                          ...item.behavioral_questions.map(q => `Behavioral: "${q}"`)
+                        ],
+                        actionItems: [
+                          `Copilot Feedback: ${item.feedback}`,
+                          `Weak areas to target: ${item.weak_areas.join(", ")}`
+                        ]
+                      })}
+                      className="bg-[#FAF8F5] border border-[#E5E0D8]/60 p-5 rounded-2xl space-y-4 cursor-pointer hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/40 hover:-translate-y-[2px] transition-all duration-200"
+                    >
                       <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 border-b border-[#E5E0D8]/40 pb-2">
                         <div>
                           <span className="text-xs font-extrabold text-[#1C1008]">{item.company}</span>
@@ -887,63 +943,120 @@ export default function AICareerCopilot({ result, resume }: AICareerCopilotProps
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
-                {/* Profile attributes */}
-                <div className="space-y-5 text-xs font-semibold">
-                  <div className="space-y-1">
-                    <p className="text-[9px] font-mono text-stone-400 uppercase tracking-wider font-extrabold">Professional Summary</p>
-                    <p className="text-[#1C1008] leading-relaxed bg-[#FAF8F5] p-3 rounded-xl border border-gray-50">{knowledgeGraph.experience_summary}</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <p className="text-[9px] font-mono text-stone-400 uppercase tracking-wider font-extrabold">Target Companies</p>
-                      <div className="flex flex-wrap gap-1">
-                        {knowledgeGraph.target_companies.map((c, i) => (
-                          <span key={i} className="bg-[#FAF8F5] border border-[#E5E0D8]/60 text-[#1C1008] text-[8px] font-mono font-bold px-2 py-1 rounded">
-                            {c}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <p className="text-[9px] font-mono text-stone-400 uppercase tracking-wider font-extrabold">Career Goals</p>
-                      <div className="flex flex-wrap gap-1">
-                        {knowledgeGraph.career_goals.map((g, i) => (
-                          <span key={i} className="bg-purple-50 border border-purple-100 text-purple-700 text-[8px] font-mono font-bold px-2 py-1 rounded">
-                            {g}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Skills tags and Core achievements */}
-                <div className="space-y-5 text-xs font-semibold">
-                  <div className="space-y-2">
-                    <p className="text-[9px] font-mono text-stone-400 uppercase tracking-wider font-extrabold">Skills Index Tags</p>
-                    <div className="flex flex-wrap gap-1">
-                      {knowledgeGraph.skills.map((s, i) => (
-                        <span key={i} className="bg-white border border-[#E5E0D8] text-[#1C1008] text-[8px] font-mono font-bold px-2.5 py-1 rounded-lg">
-                          {s}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-[9px] font-mono text-stone-400 uppercase tracking-wider font-extrabold">Key Achievements Logged</p>
-                    <div className="space-y-2">
-                      {knowledgeGraph.achievements.map((ach, i) => (
-                        <div key={i} className="bg-[#FAF8F5] border border-gray-100 p-2.5 rounded-xl flex items-center gap-2 text-stone-700 font-semibold text-[10px]">
-                          <Award className="h-4 w-4 text-[#D97706] shrink-0" />
-                          <span>{ach}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                 {/* Profile attributes */}
+                 <div className="space-y-5 text-xs font-semibold">
+                   <div 
+                     onClick={() => setActiveDiagnosticDetail({
+                       title: "Professional Summary Gaps",
+                       description: "AI feedback on your professional summary's impact metrics and tone alignment.",
+                       details: [
+                         `Summary content: "${knowledgeGraph.experience_summary}"`
+                       ],
+                       actionItems: [
+                         "Include more quantifiable metrics like efficiency gains, revenue increases, or scale dimensions.",
+                         "Ensure all target role keywords are organically woven into the text."
+                       ]
+                     })}
+                     className="space-y-1 cursor-pointer group"
+                   >
+                     <p className="text-[9px] font-mono text-stone-400 uppercase tracking-wider font-extrabold group-hover:text-[#D97706]">Professional Summary</p>
+                     <p className="text-[#1C1008] leading-relaxed bg-[#FAF8F5] p-3 rounded-xl border border-gray-50 group-hover:border-[#D97706]/40 group-hover:bg-[#F5F0E8]/40 transition-all">{knowledgeGraph.experience_summary}</p>
+                   </div>
+ 
+                   <div className="grid grid-cols-2 gap-4">
+                     <div 
+                       onClick={() => setActiveDiagnosticDetail({
+                         title: "Target Companies Strategy",
+                         description: "How your resume compares to target employer engineering standards.",
+                         details: knowledgeGraph.target_companies.map(c => `Target Employer: ${c}`),
+                         actionItems: [
+                           "Analyze employee profiles at these companies to match design pattern keywords.",
+                           "Tailor projects to match the scale used by these target engineering organizations."
+                         ]
+                       })}
+                       className="space-y-2 cursor-pointer group p-2 rounded-2xl hover:bg-[#F5F0E8]/40 transition-all"
+                     >
+                       <p className="text-[9px] font-mono text-stone-400 uppercase tracking-wider font-extrabold group-hover:text-[#D97706]">Target Companies</p>
+                       <div className="flex flex-wrap gap-1">
+                         {knowledgeGraph.target_companies.map((c, i) => (
+                           <span key={i} className="bg-[#FAF8F5] border border-[#E5E0D8]/60 text-[#1C1008] text-[8px] font-mono font-bold px-2 py-1 rounded">
+                             {c}
+                           </span>
+                         ))}
+                       </div>
+                     </div>
+ 
+                     <div 
+                       onClick={() => setActiveDiagnosticDetail({
+                         title: "Career Goals & Milestones",
+                         description: "Roadmap progression parameters based on your target positions.",
+                         details: knowledgeGraph.career_goals.map(g => `Target Objective: ${g}`),
+                         actionItems: [
+                           "Review skills index gaps to identify missing seniority competencies.",
+                           "Optimize bullet points to reflect higher levels of ownership and leadership."
+                         ]
+                       })}
+                       className="space-y-2 cursor-pointer group p-2 rounded-2xl hover:bg-[#F5F0E8]/40 transition-all"
+                     >
+                       <p className="text-[9px] font-mono text-stone-400 uppercase tracking-wider font-extrabold group-hover:text-purple-600">Career Goals</p>
+                       <div className="flex flex-wrap gap-1">
+                         {knowledgeGraph.career_goals.map((g, i) => (
+                           <span key={i} className="bg-purple-50 border border-purple-100 text-purple-700 text-[8px] font-mono font-bold px-2 py-1 rounded">
+                             {g}
+                           </span>
+                         ))}
+                       </div>
+                     </div>
+                   </div>
+                 </div>
+ 
+                 {/* Skills tags and Core achievements */}
+                 <div className="space-y-5 text-xs font-semibold">
+                   <div 
+                     onClick={() => setActiveDiagnosticDetail({
+                       title: "Skills Index Calibration",
+                       description: "Your compiled core keywords matched from historical scans.",
+                       details: knowledgeGraph.skills.map(s => `Indexed Skill: ${s}`),
+                       actionItems: [
+                         "Add missing critical skills flagged in the Career Intelligence tab.",
+                         "Practice mock interview coding drills for each technical tag listed."
+                       ]
+                     })}
+                     className="space-y-2 cursor-pointer group p-2 rounded-2xl hover:bg-[#F5F0E8]/40 transition-all"
+                   >
+                     <p className="text-[9px] font-mono text-stone-400 uppercase tracking-wider font-extrabold group-hover:text-[#D97706]">Skills Index Tags</p>
+                     <div className="flex flex-wrap gap-1">
+                       {knowledgeGraph.skills.map((s, i) => (
+                         <span key={i} className="bg-white border border-[#E5E0D8] text-[#1C1008] text-[8px] font-mono font-bold px-2.5 py-1 rounded-lg">
+                           {s}
+                         </span>
+                       ))}
+                     </div>
+                   </div>
+ 
+                   <div 
+                     onClick={() => setActiveDiagnosticDetail({
+                       title: "Achievements Veracity Check",
+                       description: "How well your key achievements stand out to hiring managers.",
+                       details: knowledgeGraph.achievements,
+                       actionItems: [
+                         "Re-phrase achievements using the XYZ formula (Accomplished X, measured by Y, by doing Z).",
+                         "Make sure to highlight actual business impact, not just completed tasks."
+                       ]
+                     })}
+                     className="space-y-2 cursor-pointer group p-2 rounded-2xl hover:bg-[#F5F0E8]/40 transition-all"
+                   >
+                     <p className="text-[9px] font-mono text-stone-400 uppercase tracking-wider font-extrabold group-hover:text-[#D97706]">Key Achievements Logged</p>
+                     <div className="space-y-2">
+                       {knowledgeGraph.achievements.map((ach, i) => (
+                         <div key={i} className="bg-[#FAF8F5] border border-gray-100 p-2.5 rounded-xl flex items-center gap-2 text-stone-700 font-semibold text-[10px]">
+                           <Award className="h-4 w-4 text-[#D97706] shrink-0" />
+                           <span>{ach}</span>
+                         </div>
+                       ))}
+                     </div>
+                   </div>
+                 </div>
 
               </div>
 
@@ -953,6 +1066,14 @@ export default function AICareerCopilot({ result, resume }: AICareerCopilotProps
         </AnimatePresence>
       </div>
 
+      <DiagnosticModal
+        isOpen={!!activeDiagnosticDetail}
+        onClose={() => setActiveDiagnosticDetail(null)}
+        title={activeDiagnosticDetail?.title || ""}
+        description={activeDiagnosticDetail?.description || ""}
+        details={activeDiagnosticDetail?.details}
+        actionItems={activeDiagnosticDetail?.actionItems}
+      />
     </div>
   );
 }

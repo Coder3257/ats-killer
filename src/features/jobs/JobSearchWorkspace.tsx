@@ -37,6 +37,7 @@ import {
 import { useUser } from "../../shared/contexts/AuthContext";
 import { useApplicationStore } from "../../shared/stores/applicationStore";
 import { useToast } from "../../shared/contexts/ToastContext";
+import { LoadingSequence, DiagnosticModal } from "../../components";
 
 interface JobSearchWorkspaceProps {
   initialResult: AnalysisResult;
@@ -157,6 +158,14 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
   // Active Workspace Tab
   const [activeTab, setActiveTab] = useState<"tracker" | "analytics" | "matcher" | "checklist">("tracker");
 
+  // Diagnostic Modal State
+  const [activeDiagnosticDetail, setActiveDiagnosticDetail] = useState<{
+    title: string;
+    description: string;
+    details: string[];
+    actionItems: string[];
+  } | null>(null);
+
   // Tracker Layout View (Kanban vs List)
   const [trackerLayout, setTrackerLayout] = useState<"kanban" | "list">("kanban");
 
@@ -233,7 +242,7 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
   // Reset to initial AI analysis seed data
   const handleResetWorkspace = async () => {
     if (!user?.id) return;
-    if (window.confirm("Are you sure you want to reset workspace data to Gemini initial seeds?")) {
+    if (window.confirm("Are you sure you want to reset workspace data to the initial seeds?")) {
       try {
         for (const app of applications) {
           await deleteApplication(user.id, app.id);
@@ -570,51 +579,58 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
         </div>
       </div>
 
-      {/* WORKSPACE NAVIGATION TABS */}
-      <div className="flex border-b border-[#E5E0D8]/50 pb-px overflow-x-auto gap-2">
-        <button
-          onClick={() => setActiveTab("tracker")}
-          className={`pb-3 px-4 text-xs font-bold border-b-2 transition-all shrink-0 cursor-pointer ${activeTab === "tracker"
-            ? "border-[#D97706] text-[#D97706]"
-            : "border-transparent text-[#4E453F] hover:text-[#1C1008]"
-            }`}
-        >
-          📋 Application Tracker
-        </button>
+      {/* WORKSPACE CONTENT CONTAINER */}
+      <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-start w-full">
 
-        <button
-          onClick={() => setActiveTab("analytics")}
-          className={`pb-3 px-4 text-xs font-bold border-b-2 transition-all shrink-0 cursor-pointer ${activeTab === "analytics"
-            ? "border-[#D97706] text-[#D97706]"
-            : "border-transparent text-[#4E453F] hover:text-[#1C1008]"
-            }`}
-        >
-          📊 Analytics & Versions
-        </button>
+        {/* WORKSPACE NAVIGATION SIDEBAR */}
+        <div className="w-full md:w-16 lg:w-60 shrink-0 flex flex-row md:flex-col gap-1 border-b md:border-b-0 md:border-r border-[#E5E0D8]/50 pb-4 md:pb-0 pr-0 md:pr-4 lg:pr-6 overflow-x-auto md:overflow-x-visible">
+          <button
+            onClick={() => setActiveTab("tracker")}
+            className={`flex items-center justify-center lg:justify-start gap-3 w-full py-3 px-3 lg:px-4 text-xs font-bold transition-all rounded-xl cursor-pointer border-l-4 ${activeTab === "tracker"
+              ? "bg-[#F5F0E8] border-[#D97706] text-[#D97706]"
+              : "border-transparent text-[#4E453F] hover:text-[#1C1008] hover:bg-[#F5F0E8]/50"
+              }`}
+          >
+            <span className="text-base shrink-0">📋</span>
+            <span className="hidden lg:inline">Application Tracker</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab("matcher")}
-          className={`pb-3 px-4 text-xs font-bold border-b-2 transition-all shrink-0 cursor-pointer ${activeTab === "matcher"
-            ? "border-[#D97706] text-[#D97706]"
-            : "border-transparent text-[#4E453F] hover:text-[#1C1008]"
-            }`}
-        >
-          🧠 AI Job Matcher
-        </button>
+          <button
+            onClick={() => setActiveTab("analytics")}
+            className={`flex items-center justify-center lg:justify-start gap-3 w-full py-3 px-3 lg:px-4 text-xs font-bold transition-all rounded-xl cursor-pointer border-l-4 ${activeTab === "analytics"
+              ? "bg-[#F5F0E8] border-[#D97706] text-[#D97706]"
+              : "border-transparent text-[#4E453F] hover:text-[#1C1008] hover:bg-[#F5F0E8]/50"
+              }`}
+          >
+            <span className="text-base shrink-0">📊</span>
+            <span className="hidden lg:inline">Analytics & Versions</span>
+          </button>
 
-        <button
-          onClick={() => setActiveTab("checklist")}
-          className={`pb-3 px-4 text-xs font-bold border-b-2 transition-all shrink-0 cursor-pointer ${activeTab === "checklist"
-            ? "border-[#D97706] text-[#D97706]"
-            : "border-transparent text-[#4E453F] hover:text-[#1C1008]"
-            }`}
-        >
-          🎯 Pre-Job Checklist
-        </button>
-      </div>
+          <button
+            onClick={() => setActiveTab("matcher")}
+            className={`flex items-center justify-center lg:justify-start gap-3 w-full py-3 px-3 lg:px-4 text-xs font-bold transition-all rounded-xl cursor-pointer border-l-4 ${activeTab === "matcher"
+              ? "bg-[#F5F0E8] border-[#D97706] text-[#D97706]"
+              : "border-transparent text-[#4E453F] hover:text-[#1C1008] hover:bg-[#F5F0E8]/50"
+              }`}
+          >
+            <span className="text-base shrink-0">🧠</span>
+            <span className="hidden lg:inline">AI Job Matcher</span>
+          </button>
 
-      {/* WORKSPACE TAB CONTENT PANEL */}
-      <div className="min-h-[400px]">
+          <button
+            onClick={() => setActiveTab("checklist")}
+            className={`flex items-center justify-center lg:justify-start gap-3 w-full py-3 px-3 lg:px-4 text-xs font-bold transition-all rounded-xl cursor-pointer border-l-4 ${activeTab === "checklist"
+              ? "bg-[#F5F0E8] border-[#D97706] text-[#D97706]"
+              : "border-transparent text-[#4E453F] hover:text-[#1C1008] hover:bg-[#F5F0E8]/50"
+              }`}
+          >
+            <span className="text-base shrink-0">🎯</span>
+            <span className="hidden lg:inline">Pre-Job Checklist</span>
+          </button>
+        </div>
+
+        {/* WORKSPACE TAB CONTENT PANEL */}
+        <div className="flex-1 min-h-[400px] w-full">
         <AnimatePresence mode="wait">
 
           {/* TAB 1: APPLICATION TRACKER */}
@@ -680,10 +696,28 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
                               key={app.id}
                               draggable
                               onDragStart={(e) => handleDragStart(e, app.id)}
-                              className="bg-white border border-[#E5E0D8] hover:border-[#D97706]/50 rounded-xl p-3.5 cursor-grab active:cursor-grabbing transition-all premium-shadow space-y-2.5 relative group"
+                              onClick={() => setActiveDiagnosticDetail({
+                                title: `Tracked Application: ${app.company}`,
+                                description: `Details for your ${app.position} role application.`,
+                                details: [
+                                  `Company: ${app.company}`,
+                                  `Position: ${app.position}`,
+                                  `Status: ${app.status}`,
+                                  `Resume Version: ${app.resume_version}`,
+                                  `ATS Match Score: ${app.ats_score ? `${app.ats_score}%` : "Not evaluated"}`,
+                                  `Date Applied: ${app.date_applied}`
+                                ],
+                                actionItems: [
+                                  `Notes: ${app.notes || "No notes logged yet."}`
+                                ]
+                              })}
+                              className="bg-white border border-[#E5E0D8] hover:border-[#D97706]/50 rounded-xl p-3.5 cursor-pointer hover:shadow-md transition-all premium-shadow space-y-2.5 relative group"
                             >
                               <button
-                                onClick={() => handleDeleteApplication(app.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteApplication(app.id);
+                                }}
                                 className="absolute top-2.5 right-2.5 text-[#EF4444] opacity-0 group-hover:opacity-100 hover:bg-[#FEE2E2] p-1 rounded transition-all cursor-pointer"
                                 title="Delete application"
                               >
@@ -751,7 +785,25 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
                       </thead>
                       <tbody className="divide-y divide-[#E5E0D8]/50 bg-white">
                         {applications.map((app) => (
-                          <tr key={app.id} className="hover:bg-[#FAF8F5]/40 transition-colors">
+                          <tr 
+                            key={app.id} 
+                            onClick={() => setActiveDiagnosticDetail({
+                              title: `Tracked Application: ${app.company}`,
+                              description: `Details for your ${app.position} role application.`,
+                              details: [
+                                `Company: ${app.company}`,
+                                `Position: ${app.position}`,
+                                `Status: ${app.status}`,
+                                `Resume Version: ${app.resume_version}`,
+                                `ATS Match Score: ${app.ats_score ? `${app.ats_score}%` : "Not evaluated"}`,
+                                `Date Applied: ${app.date_applied}`
+                              ],
+                              actionItems: [
+                                `Notes: ${app.notes || "No notes logged yet."}`
+                              ]
+                            })}
+                            className="hover:bg-[#FAF8F5]/40 transition-colors cursor-pointer"
+                          >
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-xs font-extrabold text-[#1C1008]">{app.position}</div>
                               <div className="text-[10px] text-gray-500 font-mono mt-0.5">{app.company}</div>
@@ -777,6 +829,7 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
                               <div className="flex items-center justify-end gap-2">
                                 <select
                                   value={app.status}
+                                  onClick={(e) => e.stopPropagation()}
                                   onChange={(e) => handleUpdateStatus(app.id, e.target.value as any)}
                                   className="bg-[#FAF8F5] text-xs font-bold rounded-lg border border-[#E5E0D8] p-1 text-[#1C1008] focus:outline-none focus:ring-1 focus:ring-[#D97706]/40 cursor-pointer"
                                 >
@@ -785,7 +838,10 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
                                   ))}
                                 </select>
                                 <button
-                                  onClick={() => handleDeleteApplication(app.id)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteApplication(app.id);
+                                  }}
                                   className="text-[#EF4444] hover:bg-red-50 p-1.5 rounded-lg border border-transparent hover:border-red-100 cursor-pointer"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
@@ -824,22 +880,51 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
               {/* Application Analytics dashboard */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="bg-[#FAF8F5] border border-[#E5E0D8] rounded-2xl p-4 flex flex-col justify-between">
-                  <span className="text-[9px] font-mono font-bold text-[#4E453F]/60 uppercase tracking-wider">Total Applications</span>
-                  <p className="text-3xl font-display font-extrabold text-[#1C1008] mt-2">{derivedAnalytics.total_applications}</p>
+                  <div className="cursor-pointer hover:-translate-y-[3px] transition-all" onClick={() => setActiveDiagnosticDetail({
+                    title: "Total Applications",
+                    description: `You have ${derivedAnalytics.total_applications} active applications.`,
+                    details: [],
+                    actionItems: []
+                  })}>
+                    <span className="text-[9px] font-mono font-bold text-[#4E453F]/60 uppercase tracking-wider">Total Applications</span>
+                    <p className="text-3xl font-display font-extrabold text-[#1C1008] mt-2">{derivedAnalytics.total_applications}</p>
+                  </div>
                 </div>
                 <div className="bg-[#FAF8F5] border border-[#E5E0D8] rounded-2xl p-4 flex flex-col justify-between">
-                  <span className="text-[9px] font-mono font-bold text-[#4E453F]/60 uppercase tracking-wider">Callbacks Received</span>
-                  <p className="text-3xl font-display font-extrabold text-[#10B981] mt-2">{derivedAnalytics.callbacks}</p>
+                  <div className="cursor-pointer hover:-translate-y-[3px] transition-all" onClick={() => setActiveDiagnosticDetail({
+                    title: "Callbacks Received",
+                    description: `You have received ${derivedAnalytics.callbacks} callbacks from employers.`,
+                    details: [],
+                    actionItems: []
+                  })}>
+                    <span className="text-[9px] font-mono font-bold text-[#4E453F]/60 uppercase tracking-wider">Callbacks Received</span>
+                    <p className="text-3xl font-display font-extrabold text-[#10B981] mt-2">{derivedAnalytics.callbacks}</p>
+                  </div>
                 </div>
-                <div className="bg-[#FAF8F5] border border-[#E5E0D8] rounded-2xl p-4 flex flex-col justify-between">
+                <div className="bg-[#FAF8F5] border border-[#E5E0D8] rounded-2xl p-4 flex flex-col justify-between cursor-pointer hover:-translate-y-[3px] transition-all" onClick={() => setActiveDiagnosticDetail({
+                      title: "Interviews Landed",
+                      description: `You have ${derivedAnalytics.interviews} interviews landed.`,
+                      details: [],
+                      actionItems: []
+                    })}>
                   <span className="text-[9px] font-mono font-bold text-[#4E453F]/60 uppercase tracking-wider">Interviews Landed</span>
                   <p className="text-3xl font-display font-extrabold text-purple-600 mt-2">{derivedAnalytics.interviews}</p>
                 </div>
-                <div className="bg-[#FAF8F5] border border-[#E5E0D8] rounded-2xl p-4 flex flex-col justify-between">
+                <div className="bg-[#FAF8F5] border border-[#E5E0D8] rounded-2xl p-4 flex flex-col justify-between cursor-pointer hover:-translate-y-[3px] transition-all" onClick={() => setActiveDiagnosticDetail({
+                      title: "Offers Obtained",
+                      description: `You have obtained ${derivedAnalytics.offers} offers.`,
+                      details: [],
+                      actionItems: []
+                    })}>
                   <span className="text-[9px] font-mono font-bold text-[#4E453F]/60 uppercase tracking-wider">Offers Obtained</span>
                   <p className="text-3xl font-display font-extrabold text-emerald-600 mt-2">{derivedAnalytics.offers}</p>
                 </div>
-                <div className="bg-[#FAF8F5] border border-[#E5E0D8] rounded-2xl p-4 flex flex-col justify-between col-span-2 md:col-span-1">
+                <div className="bg-[#FAF8F5] border border-[#E5E0D8] rounded-2xl p-4 flex flex-col justify-between col-span-2 md:col-span-1 cursor-pointer hover:-translate-y-[3px] transition-all" onClick={() => setActiveDiagnosticDetail({
+                      title: "Acceptance Rate",
+                      description: `Your acceptance rate is ${derivedAnalytics.acceptance_rate}%.`,
+                      details: [],
+                      actionItems: []
+                    })}>
                   <span className="text-[9px] font-mono font-bold text-[#4E453F]/60 uppercase tracking-wider">Acceptance Rate</span>
                   <p className="text-3xl font-display font-extrabold text-[#D97706] mt-2">{derivedAnalytics.acceptance_rate}%</p>
                 </div>
@@ -858,25 +943,60 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
                   {/* Weekly Chart */}
                   <div className="space-y-4">
                     <p className="text-[10px] font-mono font-bold text-[#4E453F]/65 uppercase tracking-wider">Weekly Activity (Daily Output)</p>
-                    <div className="h-32 flex items-end justify-between gap-1 pt-4 border-b border-gray-100">
-                      {derivedAnalytics.weekly_activity.map(day => {
-                        const max = Math.max(...derivedAnalytics.weekly_activity.map(d => d.count), 1);
-                        const percent = (day.count / max) * 80 + 5; // offset bar height
-                        return (
-                          <div key={day.day} className="flex-1 flex flex-col items-center gap-1 group relative">
-                            {/* tooltip */}
-                            <span className="absolute -top-7 scale-0 group-hover:scale-100 bg-[#1C1008] text-white text-[9px] font-mono px-1.5 py-0.5 rounded transition-all">
-                              {day.count}
-                            </span>
-                            <div
-                              className="w-full bg-[#D97706]/70 group-hover:bg-[#D97706] rounded-t-md transition-all duration-500"
-                              style={{ height: `${percent}px` }}
-                            />
-                            <span className="text-[9px] font-mono text-[#4E453F]/60">{day.day}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
+                    {applications.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center text-center p-8 border border-dashed border-[#E5E0D8] rounded-2xl space-y-3.5 bg-[#FAF8F5]/30">
+                        <Activity className="h-8 w-8 text-[#D97706]/60 animate-pulse" />
+                        <h5 className="text-xs font-extrabold text-[#1C1008]">No Weekly Activity Logged</h5>
+                        <p className="text-[10px] text-[#4E453F] leading-relaxed max-w-[260px] font-semibold">
+                          No data yet — run an analysis to populate this
+                        </p>
+                        <button
+                          onClick={() => setActiveDiagnosticDetail({
+                            title: "Start Optimization Scan",
+                            description: "Run an analysis on your resume to populate the applications tracker and begin tracking your weekly pipeline.",
+                            actionItems: ["Navigate to the Analyzer tab to run a match scan."]
+                          })}
+                          className="px-4 py-2 bg-[#1C1008] text-white hover:bg-stone-900 transition-colors rounded-xl text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>Analyze Resume</span>
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="h-32 flex items-end justify-between gap-1 pt-4 border-b border-gray-100">
+                        {derivedAnalytics.weekly_activity.map(day => {
+                          const max = Math.max(...derivedAnalytics.weekly_activity.map(d => d.count), 1);
+                          const percent = (day.count / max) * 80 + 5; // offset bar height
+                          return (
+                            <div 
+                              key={day.day} 
+                              onClick={() => setActiveDiagnosticDetail({
+                                title: `Daily Applications Count: ${day.day}`,
+                                description: `You submitted ${day.count} applications on this day of the week.`,
+                                details: [
+                                  `Weekly peak: ${Math.max(...derivedAnalytics.weekly_activity.map(d => d.count))}`
+                                ],
+                                actionItems: [
+                                  "Spacing your application submissions across weekdays helps manage callback review times.",
+                                  "Check your Copilot schedule daily to complete follow-ups on time."
+                                ]
+                              })}
+                              className="flex-1 flex flex-col items-center gap-1 group relative cursor-pointer"
+                            >
+                              {/* tooltip */}
+                              <span className="absolute -top-7 scale-0 group-hover:scale-100 bg-[#1C1008] text-white text-[9px] font-mono px-1.5 py-0.5 rounded transition-all">
+                                {day.count}
+                              </span>
+                              <div
+                                className="w-full bg-[#D97706]/70 group-hover:bg-[#D97706] rounded-t-md transition-all duration-500"
+                                style={{ height: `${percent}px` }}
+                              />
+                              <span className="text-[9px] font-mono text-[#4E453F]/60">{day.day}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   {/* Monthly Activity */}
@@ -891,7 +1011,22 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
                         const total = applications.length || 1;
                         const barWidth = Math.round((month.count / total) * 100);
                         return (
-                          <div key={month.month} className="space-y-1">
+                          <div 
+                            key={month.month} 
+                            onClick={() => setActiveDiagnosticDetail({
+                              title: `Monthly Applications Volume: ${month.month}`,
+                              description: `You submitted ${month.count} applications in ${month.month}.`,
+                              details: [
+                                `Total active apps in pool: ${applications.length}`,
+                                `Percentage of total: ${Math.round((month.count / total) * 100)}%`
+                              ],
+                              actionItems: [
+                                "Maintain a steady pipeline of 3-5 applications per week.",
+                                "Track your callback rate specifically for applications submitted in this month."
+                              ]
+                            })}
+                            className="space-y-1 cursor-pointer hover:bg-[#FAF8F5]/80 p-1.5 rounded-xl transition-all"
+                          >
                             <div className="flex justify-between text-[10px] font-bold text-[#1C1008]">
                               <span>{month.month}</span>
                               <span className="font-mono">{month.count} apps</span>
@@ -926,7 +1061,21 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
                       return (
                         <div
                           key={version.version_name}
-                          className={`bg-[#FAF8F5] border rounded-2xl p-4 space-y-3 relative ${isBest ? "border-[#10B981]/50 bg-emerald-50/10" : "border-[#E5E0D8]/60"
+                          onClick={() => setActiveDiagnosticDetail({
+                            title: `Version Analytics: ${version.version_name}`,
+                            description: `Conversion rates and metrics for resume version "${version.version_name}".`,
+                            details: [
+                              `Applications Sent: ${version.applications_sent}`,
+                              `Average ATS Score: ${version.avg_ats_score}%`,
+                              `Interview Rate: ${version.interview_rate}%`,
+                              `Offer Rate: ${version.offer_rate}%`
+                            ],
+                            actionItems: [
+                              "Compare performance with other versions in the AI Career Copilot tab.",
+                              "Highlight achievements from this version in the Career Knowledge Graph."
+                            ]
+                          })}
+                          className={`bg-[#FAF8F5] border rounded-2xl p-4 space-y-3 relative cursor-pointer hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/40 hover:-translate-y-[2px] transition-all duration-200 ${isBest ? "border-[#10B981]/50 bg-emerald-50/10" : "border-[#E5E0D8]/60"
                             }`}
                         >
                           <div className="flex items-center justify-between">
@@ -992,21 +1141,19 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
                   className="bg-[#FAF8F5] border border-[#E5E0D8] rounded-2xl w-full h-64 p-4 text-xs resize-none focus:outline-none focus:ring-1 focus:ring-[#D97706]/40 text-[#1C1008] font-sans leading-relaxed"
                 />
 
-                <button
-                  onClick={handleAnalyzeJobMatch}
-                  disabled={matchingLoading || !pastedJd.trim()}
-                  className="w-full bg-[#1C1008] hover:bg-[#1C1008]/90 disabled:opacity-40 text-white font-bold py-3.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow cursor-pointer"
-                >
-                  {matchingLoading ? (
-                    <>
-                      <Clock className="h-4 w-4 animate-spin text-[#D97706]" /> Analyzing...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4 text-[#D97706]" /> Run Matcher Analysis
-                    </>
-                  )}
-                </button>
+                {matchingLoading ? (
+                  <div className="w-full py-2">
+                    <LoadingSequence steps={["Matching your profile...", "Parsing job description...", "Aligning profiles...", "Calculating score..."]} />
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleAnalyzeJobMatch}
+                    disabled={!pastedJd.trim()}
+                    className="w-full bg-[#1C1008] hover:bg-[#1C1008]/90 disabled:opacity-40 text-white font-bold py-3.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow cursor-pointer"
+                  >
+                    <Sparkles className="h-4 w-4 text-[#D97706]" /> Run Matcher Analysis
+                  </button>
+                )}
 
                 {matchingError && (
                   <div className="text-[10px] text-red-500 bg-red-50 p-2.5 rounded-lg border border-red-100 leading-relaxed font-semibold">
@@ -1017,7 +1164,34 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
 
               {/* Right Output Panel */}
               <div className="md:col-span-7 space-y-5">
-                {jobMatchResult ? (
+                {matchingLoading ? (
+                  <div className="bg-white border border-[#E5E0D8] rounded-3xl p-6 premium-shadow space-y-6 animate-pulse">
+                    <div className="flex items-center justify-between border-b border-[#E5E0D8]/60 pb-3">
+                      <div className="space-y-2">
+                        <div className="h-4 w-32 bg-stone-200 rounded" />
+                        <div className="h-3 w-48 bg-stone-100 rounded" />
+                      </div>
+                      <div className="h-6 w-16 bg-stone-200 rounded" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="h-16 bg-stone-50 rounded-2xl" />
+                      <div className="h-16 bg-stone-50 rounded-2xl" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="h-3 w-20 bg-stone-200 rounded animate-pulse" />
+                        <div className="h-3 w-32 bg-stone-100 rounded" />
+                        <div className="h-3 w-28 bg-stone-100 rounded" />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="h-3 w-20 bg-stone-200 rounded animate-pulse" />
+                        <div className="h-3 w-32 bg-stone-100 rounded" />
+                        <div className="h-3 w-28 bg-stone-100 rounded" />
+                      </div>
+                    </div>
+                    <div className="h-20 bg-stone-55 bg-stone-50 rounded-2xl animate-pulse" />
+                  </div>
+                ) : jobMatchResult ? (
                   <div className="bg-white border border-[#E5E0D8] rounded-3xl p-6 premium-shadow space-y-6">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E5E0D8]/60 pb-3">
                       <div>
@@ -1026,7 +1200,7 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
                       </div>
 
                       <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
-                        <span className="text-xs font-mono font-extrabold text-[#D97706] bg-[#FEF3C7] px-2 py-0.5 rounded border border-[#D97706]/20">
+                        <span className="text-xs font-mono font-extrabold text-[#D97706] bg-[#FEF3C7] px-2 py-0.5 rounded border border-[#D97706]/20 animate-fade-in">
                           {jobMatchResult.compatibility_score}% Match
                         </span>
                       </div>
@@ -1034,22 +1208,71 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Score display */}
-                      <div className="bg-[#FAF8F5] border border-[#E5E0D8]/60 rounded-2xl p-4 flex flex-col justify-between">
-                        <span className="text-[9px] font-mono font-bold text-[#4E453F]/60 uppercase tracking-wider">Recommended Resume version</span>
-                        <p className="text-xs font-extrabold text-[#1C1008] mt-2 font-mono">{jobMatchResult.recommended_version}</p>
+                      <div 
+                        onClick={() => setActiveDiagnosticDetail({
+                          title: "Recommended Resume Version Optimization",
+                          description: `We recommend using your "${jobMatchResult.recommended_version}" resume version for this position.`,
+                          details: [
+                            "This version has the highest density of matching keywords and historical success rates for similar roles.",
+                            "Tailoring your headline to align with the job description keywords will increase recruiter visibility."
+                          ],
+                          actionItems: [
+                            "Ensure the header of your resume matches the target job title exactly.",
+                            "Highlight relevant projects first in the experience section.",
+                            "Verify that the active resume version matches the recommended version."
+                          ]
+                        })}
+                        className="bg-[#FAF8F5] border border-[#E5E0D8]/60 rounded-2xl p-4 flex flex-col justify-between hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/40 transition-all cursor-pointer group"
+                      >
+                        <span className="text-[9px] font-mono font-bold text-[#4E453F]/60 uppercase tracking-wider group-hover:text-[#D97706]">Recommended Resume version</span>
+                        <p className="text-xs font-extrabold text-[#1C1008] mt-2 font-mono group-hover:text-[#D97706] flex items-center justify-between">
+                          {jobMatchResult.recommended_version}
+                          <ChevronRight className="h-3.5 w-3.5 text-stone-400 group-hover:text-[#D97706] transition-transform group-hover:translate-x-0.5" />
+                        </p>
                       </div>
 
-                      <div className="bg-[#FAF8F5] border border-[#E5E0D8]/60 rounded-2xl p-4 flex flex-col justify-between">
-                        <span className="text-[9px] font-mono font-bold text-[#4E453F]/60 uppercase tracking-wider">Preparation estimate</span>
-                        <p className="text-xs font-extrabold text-[#1C1008] mt-2">{jobMatchResult.est_prep_time}</p>
+                      <div 
+                        onClick={() => setActiveDiagnosticDetail({
+                          title: "Preparation Action Plan",
+                          description: `Estimated preparation time: ${jobMatchResult.est_prep_time}. Here is how to allocate your time:`,
+                          details: [
+                            "Review the key responsibilities highlighted in the job description.",
+                            "Practice mock interviews targeting the specific core competencies of this company."
+                          ],
+                          actionItems: [
+                            "First 25%: Deep dive into missing skills and technical stack differences.",
+                            "Next 50%: Align past project narratives to match the company's product challenges.",
+                            "Final 25%: Practice system design and behavioral stories (STAR method)."
+                          ]
+                        })}
+                        className="bg-[#FAF8F5] border border-[#E5E0D8]/60 rounded-2xl p-4 flex flex-col justify-between hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/40 transition-all cursor-pointer group"
+                      >
+                        <span className="text-[9px] font-mono font-bold text-[#4E453F]/60 uppercase tracking-wider group-hover:text-[#D97706]">Preparation estimate</span>
+                        <p className="text-xs font-extrabold text-[#1C1008] mt-2 group-hover:text-[#D97706] flex items-center justify-between">
+                          {jobMatchResult.est_prep_time}
+                          <ChevronRight className="h-3.5 w-3.5 text-stone-400 group-hover:text-[#D97706] transition-transform group-hover:translate-x-0.5" />
+                        </p>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Strengths */}
-                      <div className="space-y-2">
-                        <span className="text-[9px] font-mono font-bold text-[#10B981] uppercase tracking-wider flex items-center gap-1">
-                          <CheckCircle2 className="h-3.5 w-3.5" /> Core Strengths
+                      <div 
+                        onClick={() => setActiveDiagnosticDetail({
+                          title: "Leveraging Core Strengths",
+                          description: "These are the areas where your profile aligns exceptionally well with the target role requirements:",
+                          details: jobMatchResult.strengths,
+                          actionItems: [
+                            "Inject these core strengths into your resume's summary/about section.",
+                            "Prepare at least one interview story illustrating each of these strengths in action.",
+                            "Reference these directly when answering 'Why are you a good fit for this role?'"
+                          ]
+                        })}
+                        className="space-y-2 bg-[#FAF8F5]/30 hover:bg-[#F5F0E8]/40 border border-transparent hover:border-[#D97706]/20 p-3.5 rounded-2xl transition-all cursor-pointer group"
+                      >
+                        <span className="text-[9px] font-mono font-bold text-[#10B981] uppercase tracking-wider flex items-center justify-between">
+                          <span className="flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> Core Strengths</span>
+                          <ChevronRight className="h-3.5 w-3.5 text-stone-400 group-hover:text-[#D97706] opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-0.5" />
                         </span>
                         <ul className="text-xs text-[#4E453F] pl-4 list-disc space-y-1 font-semibold leading-relaxed">
                           {jobMatchResult.strengths.map((str, i) => <li key={i}>{str}</li>)}
@@ -1057,9 +1280,22 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
                       </div>
 
                       {/* Missing */}
-                      <div className="space-y-2">
-                        <span className="text-[9px] font-mono font-bold text-[#EF4444] uppercase tracking-wider flex items-center gap-1">
-                          <XCircle className="h-3.5 w-3.5" /> Missing Skills
+                      <div 
+                        onClick={() => setActiveDiagnosticDetail({
+                          title: "Bridging the Skill Gaps",
+                          description: "We identified the following missing skills or areas that were not explicitly mentioned in your active resume:",
+                          details: jobMatchResult.missing_skills,
+                          actionItems: [
+                            "Add these keywords to your resume if you have relevant exposure or personal projects.",
+                            "Take a quick crash course or read documentation on these topics to pass initial screening.",
+                            "Be prepared to explain how your transferrable skills compensate for these gaps."
+                          ]
+                        })}
+                        className="space-y-2 bg-[#FAF8F5]/30 hover:bg-[#F5F0E8]/40 border border-transparent hover:border-[#D97706]/20 p-3.5 rounded-2xl transition-all cursor-pointer group"
+                      >
+                        <span className="text-[9px] font-mono font-bold text-[#EF4444] uppercase tracking-wider flex items-center justify-between">
+                          <span className="flex items-center gap-1"><XCircle className="h-3.5 w-3.5" /> Missing Skills</span>
+                          <ChevronRight className="h-3.5 w-3.5 text-stone-400 group-hover:text-[#D97706] opacity-0 group-hover:opacity-100 transition-all group-hover:translate-x-0.5" />
                         </span>
                         <ul className="text-xs text-[#4E453F] pl-4 list-disc space-y-1 font-semibold leading-relaxed">
                           {jobMatchResult.missing_skills.map((mis, i) => <li key={i}>{mis}</li>)}
@@ -1067,9 +1303,22 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
                       </div>
                     </div>
 
-                    <div className="border-t border-[#E5E0D8]/60 pt-4 bg-[#FAF8F5] border border-[#E5E0D8]/40 rounded-2xl p-4">
-                      <span className="text-[9px] font-mono font-bold text-purple-600 uppercase tracking-wider flex items-center gap-1">
-                        <BookOpen className="h-3.5 w-3.5 text-purple-600" /> Pitch & Cover Letter Focus
+                    <div 
+                      onClick={() => setActiveDiagnosticDetail({
+                        title: "Pitch & Cover Letter Strategy",
+                        description: "Use this strategic focus to structure your elevator pitch and cover letter intro:",
+                        details: [jobMatchResult.cover_letter_focus],
+                        actionItems: [
+                          "Mention this specific focus area in the opening paragraph of your cover letter.",
+                          "Draft a 30-second elevator pitch connecting your background directly to this theme.",
+                          "Focus on quantifiable metrics related to this theme in your experience bullets."
+                        ]
+                      })}
+                      className="border-t border-[#E5E0D8]/60 pt-4 bg-[#FAF8F5] border border-[#E5E0D8]/40 rounded-2xl p-4 hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/40 transition-all cursor-pointer group"
+                    >
+                      <span className="text-[9px] font-mono font-bold text-purple-600 uppercase tracking-wider flex items-center justify-between">
+                        <span className="flex items-center gap-1"><BookOpen className="h-3.5 w-3.5 text-purple-600" /> Pitch & Cover Letter Focus</span>
+                        <ChevronRight className="h-3.5 w-3.5 text-stone-400 group-hover:text-[#D97706] transition-transform group-hover:translate-x-0.5" />
                       </span>
                       <p className="text-xs text-[#4E453F] mt-1.5 leading-relaxed font-semibold">
                         {jobMatchResult.cover_letter_focus}
@@ -1283,6 +1532,8 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
         </AnimatePresence>
       </div>
 
+    </div>
+
       {/* MODAL WINDOW FOR ADDING NEW APPLICATIONS */}
       <AnimatePresence>
         {showAddModal && (
@@ -1390,6 +1641,16 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
           </div>
         )}
       </AnimatePresence>
+
+      {/* DIAGNOSTIC DETAIL MODAL */}
+      <DiagnosticModal
+        isOpen={!!activeDiagnosticDetail}
+        onClose={() => setActiveDiagnosticDetail(null)}
+        title={activeDiagnosticDetail?.title || ""}
+        description={activeDiagnosticDetail?.description || ""}
+        details={activeDiagnosticDetail?.details}
+        actionItems={activeDiagnosticDetail?.actionItems}
+      />
 
     </section>
   );

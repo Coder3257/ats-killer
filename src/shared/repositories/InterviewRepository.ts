@@ -1,4 +1,7 @@
-import { supabase } from "../services/supabase/client";
+// Removed direct supabase import; using global supabase helper
+function getSupabase() {
+  return (globalThis as any).supabase;
+}
 
 export interface InterviewMemoryItem {
   id: string;
@@ -13,12 +16,13 @@ export interface InterviewMemoryItem {
 
 export class InterviewRepository {
   static async listInterviews(userId: string): Promise<InterviewMemoryItem[]> {
-    if (!supabase) {
+    const client = getSupabase();
+    if (!client) {
       const fallback = localStorage.getItem("INTERVIEWS_LIST");
       return fallback ? JSON.parse(fallback) : [];
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("interviews")
       .select("*")
       .eq("user_id", userId)
@@ -38,7 +42,8 @@ export class InterviewRepository {
   }
 
   static async createInterview(userId: string, data: Omit<InterviewMemoryItem, "id">): Promise<InterviewMemoryItem> {
-    if (!supabase) {
+    const client = getSupabase();
+    if (!client) {
       const list = await this.listInterviews(userId);
       const newItem: InterviewMemoryItem = {
         id: Math.random().toString(36).substring(2, 9),
@@ -50,7 +55,7 @@ export class InterviewRepository {
     }
 
     // Try to find a matching application_id for safety, else create a detached one or reference it
-    const { data: apps } = await supabase
+    const { data: apps } = await client
       .from("job_applications")
       .select("id")
       .eq("user_id", userId)
@@ -78,7 +83,7 @@ export class InterviewRepository {
     // Let's do that:
     let finalAppId = appId;
     if (!finalAppId) {
-      const { data: newApp, error: appErr } = await supabase
+      const { data: newApp, error: appErr } = await client
         .from("job_applications")
         .insert({
           user_id: userId,
@@ -93,7 +98,7 @@ export class InterviewRepository {
       finalAppId = newApp.id;
     }
 
-    const { data: record, error } = await supabase
+    const { data: record, error } = await client
       .from("interviews")
       .insert({
         ...payload,

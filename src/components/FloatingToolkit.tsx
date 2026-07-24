@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useGeminiAnalyzer, AnalysisResult } from "../shared/hooks/useGeminiAnalyzer";
 import { useToast } from "../shared/contexts/ToastContext";
+import LoadingSequence from "./LoadingSequence";
 
 interface FloatingToolkitProps {
   onAnalysisSuccess: (newResult: AnalysisResult) => void;
@@ -75,7 +76,7 @@ export default function FloatingToolkit({ onAnalysisSuccess, setActiveTab }: Flo
     },
     {
       q: "How do I trigger a score recheck?",
-      a: "When you upload a new resume variation, click 'Score Recheck' in this toolkit. It runs the Gemini API analysis using your active resume and JD context to refresh metrics."
+      a: "When you upload a new resume variation, click 'Score Recheck' in this toolkit. It runs the API analysis using your active resume and JD context to refresh metrics."
     },
     {
       q: "Is my personal resume data private?",
@@ -315,23 +316,20 @@ export default function FloatingToolkit({ onAnalysisSuccess, setActiveTab }: Flo
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={rewriteLoading || !originalBullet.trim()}
-                  className="w-full bg-[#1C1008] hover:bg-stone-900 disabled:opacity-45 text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                >
-                  {rewriteLoading ? (
-                    <>
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-[#D97706]" />
-                      <span>Rewriting bullet point...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-3.5 w-3.5 text-[#D97706]" />
-                      <span>Rewrite with AI</span>
-                    </>
-                  )}
-                </button>
+                {rewriteLoading ? (
+                  <div className="w-full py-2">
+                    <LoadingSequence steps={["Scanning context...", "Injecting keywords...", "Calibrating metrics...", "Finalizing rewrite..."]} />
+                  </div>
+                ) : (
+                  <button
+                    type="submit"
+                    disabled={!originalBullet.trim()}
+                    className="w-full bg-[#1C1008] hover:bg-stone-900 text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <Sparkles className="h-3.5 w-3.5 text-[#D97706]" />
+                    <span>Rewrite with AI</span>
+                  </button>
+                )}
 
                 {rewrittenResult && (
                   <div className="bg-[#FAF8F5] border border-[#E5E0D8] rounded-2xl p-4 mt-2 space-y-3 relative">
@@ -364,12 +362,8 @@ export default function FloatingToolkit({ onAnalysisSuccess, setActiveTab }: Flo
             {activeView === "recheck" && (
               <div className="space-y-5 py-4 text-center">
                 {recheckLoading && (
-                  <div className="space-y-3">
-                    <Loader2 className="h-10 w-10 animate-spin text-[#D97706] mx-auto" />
-                    <p className="text-xs text-[#1C1008] font-bold">Re-analyzing Resume</p>
-                    <p className="text-[10px] text-[#4E453F]/70 font-semibold leading-relaxed">
-                      Calling Gemini 2.5 Flash to compute updated scoring metrics...
-                    </p>
+                  <div className="py-4">
+                    <LoadingSequence steps={["Calibrating core metrics...", "Refreshing database...", "Calculating progress..."]} />
                   </div>
                 )}
 
