@@ -56,7 +56,7 @@ export default function PrivacyPolicy({ onNavigate }: LegalPageProps) {
               Your data is processed and shared with trusted service providers strictly to perform core operations:
             </p>
             <ul className="list-disc pl-5 space-y-2">
-              <li><strong>Gemini API (Google Cloud):</strong> To analyze keyword matches, calculate ATS scores, and rewrite resume bullets, your resume text and target job description are sent to Google’s Gemini API endpoints. Google Cloud processes this data to generate the analysis and does not use this data to train its foundational models.</li>
+              <li><strong>Third-Party AI Processing:</strong> To analyze keyword matches, calculate ATS scores, and rewrite resume bullets, your resume text and target job description are sent to our third-party AI processing provider's API endpoints. This provider processes this data to generate the analysis and does not use this data to train its foundational models.</li>
               <li><strong>Supabase (Database & Storage):</strong> Your profile details, score history, unlocked badges, and application progress are stored securely in Supabase hosted databases.</li>
               <li><strong>Razorpay:</strong> Handles checkout processing, payment capturing, and subscription state updates.</li>
             </ul>
