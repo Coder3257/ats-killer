@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from "react";
+import React, { useState, useEffect, Suspense, lazy, useRef } from "react";
 import Header from "./components/Header";
 import Hero from "./components/Hero";
 import Features from "./components/Features";
@@ -8,6 +8,7 @@ import CTASection from "./components/CTASection";
 import Footer from "./components/Footer";
 import AuthScreen from "./components/AuthScreen";
 import { useAuth } from "./shared/contexts/AuthContext";
+import { useToast } from "./shared/contexts/ToastContext";
 import LoadingSequence from "./components/LoadingSequence";
 
 const Analyzer = lazy(() => import("./components/Analyzer"));
@@ -31,9 +32,11 @@ function LoadingFallback() {
 
 export default function App() {
   const { user, loading: authLoading } = useAuth();
+  const { showToast } = useToast();
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [inDashboard, setInDashboard] = useState(false);
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  const prevUserRef = useRef<typeof user>(undefined);
 
   // Sync back/forward browser navigation
   useEffect(() => {
@@ -50,14 +53,24 @@ export default function App() {
     window.scrollTo(0, 0);
   };
 
-  // Restore dashboard view if user is logged in
+  // Restore dashboard view if user is logged in; detect session expiry
   useEffect(() => {
+    const wasLoggedIn = prevUserRef.current !== undefined && prevUserRef.current !== null;
+    const isNowLoggedOut = !user;
+
     if (user) {
       setInDashboard(true);
     } else {
+      // If user was previously logged in but now is null, it's a session expiry
+      if (wasLoggedIn && isNowLoggedOut) {
+        showToast("Session expired, please log in again", "error");
+        setIsAuthOpen(true);
+      }
       setInDashboard(false);
     }
-  }, [user]);
+
+    prevUserRef.current = user;
+  }, [user, showToast]);
 
   if (authLoading) {
     return <LoadingFallback />;
