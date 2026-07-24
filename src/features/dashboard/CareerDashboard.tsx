@@ -483,7 +483,7 @@ export default function CareerDashboard({ result, animate, onNavigateTab }: Care
                           <div className="flex flex-col items-center justify-center text-center p-6 space-y-3">
                             <Activity className="h-7 w-7 text-purple-400 mx-auto animate-pulse" />
                             <p className="text-[10px] text-[#4E453F] font-bold leading-relaxed max-w-[200px]">
-                              No data yet — run an analysis to populate this
+                              No active applications tracked yet. Run a compatibility scan to begin.
                             </p>
                             <button
                               onClick={() => safeOnNavigateTab("analyzer")}

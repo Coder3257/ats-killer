@@ -368,9 +368,6 @@ export const useGeminiAnalyzer = (): UseGeminiAnalyzerReturn => {
 
       return data.rewrittenText;
     } catch (e: any) {
-      if (!e?.message?.includes("Session expired") && !e?.message?.includes("Rate limit")) {
-        showToast("Something went wrong, please retry", "error");
-      }
       throw e;
     }
   }, [showToast]);
@@ -401,9 +398,6 @@ export const useGeminiAnalyzer = (): UseGeminiAnalyzerReturn => {
 
       return (await response.json()) as JobMatchResult;
     } catch (e: any) {
-      if (!e?.message?.includes("Session expired") && !e?.message?.includes("Rate limit")) {
-        showToast("Something went wrong, please retry", "error");
-      }
       throw e;
     }
   }, [showToast]);
@@ -452,9 +446,6 @@ export const useGeminiAnalyzer = (): UseGeminiAnalyzerReturn => {
         // Tests expect: data.reply
         return data.reply as string;
       } catch (e: any) {
-        if (!e?.message?.includes("Session expired") && !e?.message?.includes("Rate limit")) {
-          showToast("Something went wrong, please retry", "error");
-        }
         throw e;
       }
     },

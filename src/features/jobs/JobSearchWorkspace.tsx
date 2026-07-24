@@ -948,7 +948,7 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
                         <Activity className="h-8 w-8 text-[#D97706]/60 animate-pulse" />
                         <h5 className="text-xs font-extrabold text-[#1C1008]">No Weekly Activity Logged</h5>
                         <p className="text-[10px] text-[#4E453F] leading-relaxed max-w-[260px] font-semibold">
-                          No data yet — run an analysis to populate this
+                          Your weekly application pipeline is currently empty. Run a match scan to populate.
                         </p>
                         <button
                           onClick={() => setActiveDiagnosticDetail({
