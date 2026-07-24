@@ -1379,9 +1379,17 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
                   ))}
 
                   {applications.length === 0 && (
-                    <p className="text-xs text-[#4E453F]/60 italic text-center py-6">
-                      No tracked applications. Add one to checklist tasks.
-                    </p>
+                    <div className="text-center py-6 space-y-3 flex flex-col items-center">
+                      <p className="text-xs text-[#4E453F]/60 italic">
+                        No tracked applications. Add one to checklist tasks.
+                      </p>
+                      <button
+                        onClick={() => setActiveTab("tracker")}
+                        className="px-4 py-2 bg-[#1C1008] text-white hover:bg-stone-900 transition-colors rounded-xl text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        Add Your First Application
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

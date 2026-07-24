@@ -173,14 +173,6 @@ export default function DashboardLayout({ onLogout }: DashboardLayoutProps) {
             >
               <Menu className="h-5 w-5" />
             </button>
-            <div className="relative max-w-xs w-60 hidden sm:block">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
-              <input
-                type="text"
-                placeholder="Search resources, templates..."
-                className="w-full bg-[#FAF8F5] border border-[#E5E0D8]/50 pl-9 pr-4 py-1.5 rounded-xl text-[11px] font-semibold focus:outline-none focus:border-[#D97706]"
-              />
-            </div>
           </div>
  
           <div className="flex items-center gap-4.5">
