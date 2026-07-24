@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
 
 interface LoadingSequenceProps {
   steps: string[];
@@ -37,9 +36,30 @@ export default function LoadingSequence({
   if (steps.length === 0) return null;
 
   return (
-    <div className="flex flex-col items-center justify-center p-6 space-y-3 bg-[#FAF8F5]/80 border border-[#E5E0D8]/60 rounded-2xl max-w-sm mx-auto shadow-sm backdrop-blur-sm">
+    <div className="flex flex-col items-center justify-center p-6 space-y-4 bg-[#FAF8F5]/85 border border-[#E5E0D8]/60 rounded-2xl max-w-sm mx-auto shadow-sm backdrop-blur-sm relative overflow-hidden">
+      <style>{`
+        @keyframes scan {
+          0%, 100% { top: 12%; opacity: 0.3; }
+          50% { top: 80%; opacity: 1; }
+        }
+      `}</style>
+
+      {/* Sweeping Document Scanner Icon */}
+      <div className="relative w-12 h-12 flex items-center justify-center">
+        <svg viewBox="0 0 24 24" className="w-10 h-10 fill-none stroke-[#1C1008] transition-colors duration-300" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+          <polyline points="10 9 9 9 8 9" />
+        </svg>
+        <div 
+          className="absolute left-1 right-1 h-0.5 bg-[#D97706] shadow-[0_0_6px_#D97706] rounded-full" 
+          style={{ animation: 'scan 2.2s ease-in-out infinite' }} 
+        />
+      </div>
+
       <div className="flex items-center gap-2">
-        <Loader2 className="h-4.5 w-4.5 animate-spin text-[#D97706]" />
         <p
           className={`text-xs font-mono font-bold uppercase tracking-wider text-[#1C1008] transition-opacity duration-200 ${
             fade ? "opacity-100" : "opacity-0"

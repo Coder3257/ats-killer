@@ -760,18 +760,20 @@ qualifications. Don't trim it — every word matters.`}
                               exit={{ height: 0, opacity: 0 }}
                               className="w-full"
                             >
-                              <div className="mt-2 bg-white border border-[#E5E0D8] rounded-xl p-3 relative">
-                                <p className="text-[9px] font-mono font-bold uppercase tracking-wider text-[#7C3AED] mb-1">
-                                  Rewritten resume text
-                                </p>
-                                <p className="text-xs italic text-[#1C1008] leading-relaxed pr-14 font-medium">
-                                  "{fixState?.text}"
-                                </p>
+                              <div className="mt-2 bg-white border border-[#E5E0D8] rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div className="space-y-1">
+                                  <p className="text-[9px] font-mono font-bold uppercase tracking-wider text-[#7C3AED]">
+                                    Rewritten resume text
+                                  </p>
+                                  <p className="text-xs italic text-[#1C1008] leading-relaxed font-medium">
+                                    "{fixState?.text}"
+                                  </p>
+                                </div>
 
                                 <button
                                   onClick={() => handleCopyFix(idx, fixState?.text || "")}
                                   disabled={!fixState?.text}
-                                  className="absolute top-2 right-2 p-2 bg-white hover:bg-[#FAF8F5] text-[#7C3AED] rounded-xl border border-[#E5E0D8] transition-all flex items-center gap-1 text-[10px] font-bold shrink-0 cursor-pointer disabled:opacity-50"
+                                  className="self-end sm:self-center p-2 bg-white hover:bg-[#FAF8F5] text-[#7C3AED] rounded-xl border border-[#E5E0D8] transition-all flex items-center gap-1 text-[10px] font-bold shrink-0 cursor-pointer disabled:opacity-50"
                                 >
                                   {fixState?.copied ? (
                                     <>
@@ -908,17 +910,19 @@ qualifications. Don't trim it — every word matters.`}
                 </button>
 
                 {showRewrite && (
-                  <div className="bg-[#EDE9FE] rounded-2xl p-4 mt-3 relative border border-[#7C3AED]/10 animate-fade-in-up">
-                    <p className="text-xs font-mono font-extrabold uppercase tracking-wider text-[#7C3AED] mb-2">
-                      Optimized Professional Summary
-                    </p>
-                    <p className="text-sm italic text-[#4C1D95] pr-16 leading-relaxed font-sans font-medium">
-                      "{result.rewrite_suggestion}"
-                    </p>
+                  <div className="bg-[#EDE9FE] rounded-2xl p-4 mt-3 border border-[#7C3AED]/10 animate-fade-in-up flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                    <div className="space-y-2">
+                      <p className="text-xs font-mono font-extrabold uppercase tracking-wider text-[#7C3AED]">
+                        Optimized Professional Summary
+                      </p>
+                      <p className="text-sm italic text-[#4C1D95] leading-relaxed font-sans font-medium">
+                        "{result.rewrite_suggestion}"
+                      </p>
+                    </div>
 
                     <button
                       onClick={handleCopyRewrite}
-                      className="absolute top-3 right-3 p-2 bg-white/80 hover:bg-white text-[#7C3AED] rounded-xl border border-[#7C3AED]/20 transition-all flex items-center gap-1 text-xs font-bold shrink-0 cursor-pointer"
+                      className="self-end sm:self-start p-2 bg-white/80 hover:bg-white text-[#7C3AED] rounded-xl border border-[#7C3AED]/20 transition-all flex items-center gap-1 text-xs font-bold shrink-0 cursor-pointer"
                     >
                       {copiedRewrite ? (
                         <>
@@ -957,9 +961,9 @@ qualifications. Don't trim it — every word matters.`}
                       key={idx}
                       className="bg-white/5 rounded-2xl p-4 flex flex-col gap-3 border border-white/5"
                     >
-                      <div className="flex items-start gap-4 justify-between">
-                        <div className="flex items-start gap-4">
-                          <span className="text-[#D97706] text-2xl font-extrabold font-mono leading-none">
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 w-full">
+                        <div className="flex items-start gap-3">
+                          <span className="text-[#D97706] text-xl font-extrabold font-mono leading-none mt-0.5">
                             {idx + 1}
                           </span>
                           <div className="space-y-1">
@@ -969,7 +973,7 @@ qualifications. Don't trim it — every word matters.`}
                         </div>
 
                         {/* Impact Statistics */}
-                        <div className="flex flex-col items-end gap-1.5 shrink-0 text-right">
+                        <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 shrink-0 self-start sm:self-auto pl-7 sm:pl-0">
                           <span className="bg-[#FEF3C7] text-[#92400E] text-[10px] font-mono font-bold px-2 py-0.5 rounded flex items-center gap-0.5 shadow-sm uppercase shrink-0">
                             <TrendingUp className="h-3 w-3 shrink-0" /> +{win.impact_increase} Score
                           </span>
@@ -981,20 +985,20 @@ qualifications. Don't trim it — every word matters.`}
 
                       {/* original context + rewrite launcher */}
                       {win.original_context && (
-                        <div className="mt-2 pt-3 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white/2 p-3 rounded-xl border border-white/2">
+                        <div className="mt-2 pt-3 border-t border-white/5 flex flex-col sm:flex-row sm:items-start justify-between gap-3 bg-white/2 p-3 rounded-xl border border-white/2">
                           <div className="space-y-0.5">
                             <p className="text-[9px] font-mono uppercase tracking-wider text-white/40 font-bold">Your current draft</p>
                             <p className="text-xs text-white/80 leading-relaxed font-medium italic pr-4">"{win.original_context}"</p>
                           </div>
 
                           {isRewriting ? (
-                            <div className="py-1">
+                            <div className="py-1 self-end sm:self-center">
                               <LoadingSequence steps={["Scanning bullet...", "Polishing vocabulary...", "Applying metrics..."]} />
                             </div>
                           ) : (
                             <button
                               onClick={() => handleRewriteBullet(idx, win.original_context, win.description)}
-                              className="bg-[#D97706] text-[#1C1008] hover:bg-[#D97706]/90 transition-all font-bold text-[10px] px-3 py-1.5 rounded-lg flex items-center gap-1 shrink-0 cursor-pointer duration-150 active:scale-[0.98]"
+                              className="bg-[#D97706] text-[#1C1008] hover:bg-[#D97706]/90 transition-all font-bold text-[10px] px-3 py-1.5 rounded-lg flex items-center gap-1 shrink-0 cursor-pointer duration-150 active:scale-[0.98] self-end sm:self-center"
                             >
                               <Sparkles className="h-3.5 w-3.5" />
                               <span>Rewrite Bullet</span>

@@ -25,12 +25,16 @@ CRITICAL ANALYSIS RULES:
 
 2. WHY YOU'RE BEING GHOSTED ("rejection_reasons"):
    - Must be deeply grounded in the candidate's actual resume content compared to the job description.
-   - For each reason, you must explicitly quote or reference specific text/omission from the candidate's resume (e.g., "In the Experience section, you listed 'managed hosting' but did not mention specific AWS or Docker containerization tools required by the job post").
+   - Every weakness cited must explicitly reference a specific resume line or section (e.g., "In the Experience section, you listed 'managed hosting' but did not mention specific AWS or Docker containerization tools required by the job post").
+   - Every weakness must pair with one concrete actionable fix.
    - DO NOT provide generic career advice (e.g., "Add more achievements").
 
 3. WHAT THIS COMPANY ACTUALLY WANTS ("company_archetype"):
    - Deduce the company's culture and specific expectations from the job description context (e.g., fast-paced startup, strict enterprise compliance, developer tooling, highly-scaled infrastructure).
    - For each insight item, write a resume-grounded advice explaining what parts of their resume they must emphasize or optimize to align with this company's archetype. Quote specific resume roles or projects that the candidate should align.
+
+4. SCORE CALCULATION RULES:
+   - The main compatibility "score" (and "ats_compatibility") must derive from stated criteria: keyword match (35%), skills coverage (35%), and seniority/experience alignment (30%). Do not output an unexplained number.
 
 ENUM AND SIZE CONSTRAINTS (VERY IMPORTANT):
 - "severity" must be exactly one of: "HIGH", "MEDIUM", "LOW"
