@@ -16,9 +16,11 @@ import {
   Sparkles,
   Zap,
   Target,
+  Share2,
 } from "lucide-react";
 import { AnalysisResult } from "../../hooks/useGeminiAnalyzer";
 import DiagnosticModal from "../../components/DiagnosticModal";
+import { useToast } from "../../shared/contexts/ToastContext";
 
 
 interface CareerIntelligenceProps {
@@ -27,6 +29,14 @@ interface CareerIntelligenceProps {
 }
 
 export default function CareerIntelligence({ result, animate }: CareerIntelligenceProps) {
+  const { showToast } = useToast();
+  const [showShareMenu, setShowShareMenu] = useState(false);
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText("https://ats-killer.vercel.app");
+    showToast("Link copied to clipboard!", "success");
+    setShowShareMenu(false);
+  };
   const {
     hiring_probability,
     salary_intelligence,
@@ -92,7 +102,7 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
     <div className="border-t border-[#E5E0D8] pt-12 mt-12 px-4 sm:px-6 space-y-12">
       
       {/* SECTION HEADER */}
-      <div className="text-center max-w-xl mx-auto space-y-2 mb-8">
+      <div className="text-center max-w-xl mx-auto space-y-3 mb-8 relative">
         <span className="text-[10px] font-mono font-bold tracking-widest text-[#D97706] uppercase bg-[#FEF3C7] px-3 py-1 rounded-full border border-[#D97706]/20 inline-block">
           Career Intelligence™
         </span>
@@ -102,6 +112,52 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
         <p className="text-xs text-[#4E453F] leading-relaxed font-semibold">
           Five premium AI modules estimating your career growth trajectory, salary potential, skills matching, and long-term competitiveness.
         </p>
+        
+        {/* Share Button container */}
+        <div className="flex justify-center relative pt-2">
+          <button
+            onClick={() => setShowShareMenu(!showShareMenu)}
+            className="px-3.5 py-1.5 bg-white border border-[#E5E0D8] hover:bg-[#F5F0E8] text-[#1C1008] rounded-xl text-[10px] font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95 transition-all"
+          >
+            <Share2 className="h-3.5 w-3.5" />
+            <span>Share Report</span>
+          </button>
+
+          {showShareMenu && (
+            <>
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setShowShareMenu(false)}
+              />
+              <div className="absolute top-12 bg-white border border-[#E5E0D8] rounded-xl shadow-lg p-2.5 w-44 space-y-1 z-50 animate-pop-in text-left">
+                <a
+                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://ats-killer.vercel.app")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setShowShareMenu(false)}
+                  className="w-full text-[10px] font-bold text-[#4E453F] hover:text-[#D97706] hover:bg-[#FAF8F5] p-2 rounded-lg flex items-center gap-2 cursor-pointer transition-all"
+                >
+                  <span>🔗</span> Share on LinkedIn
+                </a>
+                <a
+                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("I just optimized my resume competitiveness index using ATS Killer! Try it for yourself:")}&url=${encodeURIComponent("https://ats-killer.vercel.app")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setShowShareMenu(false)}
+                  className="w-full text-[10px] font-bold text-[#4E453F] hover:text-[#D97706] hover:bg-[#FAF8F5] p-2 rounded-lg flex items-center gap-2 cursor-pointer transition-all"
+                >
+                  <span>🐦</span> Share on X / Twitter
+                </a>
+                <button
+                  onClick={handleCopyLink}
+                  className="w-full text-left text-[10px] font-bold text-[#4E453F] hover:text-[#D97706] hover:bg-[#FAF8F5] p-2 rounded-lg flex items-center gap-2 cursor-pointer transition-all border-none bg-transparent"
+                >
+                  <span>📋</span> Copy Referral Link
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* MODULE 1: Hiring Probability™ */}

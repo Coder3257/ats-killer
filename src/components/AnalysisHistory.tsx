@@ -10,7 +10,8 @@ import {
   ChevronRight, 
   Loader2, 
   Eye,
-  CornerDownLeft
+  CornerDownLeft,
+  Share2
 } from "lucide-react";
 import { AnalysisRepository } from "../shared/repositories/AnalysisRepository";
 import { useAuth } from "../shared/contexts/AuthContext";
@@ -30,6 +31,13 @@ export default function AnalysisHistory({ onLoadAnalysis, setActiveTab }: Analys
   const [history, setHistory] = useState<any[]>([]);
   const [selectedRecord, setSelectedRecord] = useState<any | null>(null);
   const [activeDiagnosticDetail, setActiveDiagnosticDetail] = useState<any>(null);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText("https://ats-killer.vercel.app");
+    showToast("Link copied to clipboard!", "success");
+    setShowShareMenu(false);
+  };
 
 
   useEffect(() => {
@@ -255,6 +263,51 @@ export default function AnalysisHistory({ onLoadAnalysis, setActiveTab }: Analys
                     <AlertCircle className="h-3 w-3" />
                     <span>Delete</span>
                   </button>
+
+                  <div className="relative inline-block">
+                    <button
+                      onClick={() => setShowShareMenu(!showShareMenu)}
+                      className="px-3 py-1.5 bg-white border border-[#E5E0D8]/80 hover:bg-[#F5F0E8] text-[#1C1008] rounded-xl text-[10px] font-bold flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                    >
+                      <Share2 className="h-3 w-3" />
+                      <span>Share</span>
+                    </button>
+
+                    {showShareMenu && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-40" 
+                          onClick={() => setShowShareMenu(false)}
+                        />
+                        <div className="absolute right-0 mt-2 bg-white border border-[#E5E0D8] rounded-xl shadow-lg p-2.5 w-44 space-y-1 z-50 animate-pop-in text-left">
+                          <a
+                            href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://ats-killer.vercel.app")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => setShowShareMenu(false)}
+                            className="w-full text-[10px] font-bold text-[#4E453F] hover:text-[#D97706] hover:bg-[#FAF8F5] p-2 rounded-lg flex items-center gap-2 cursor-pointer transition-all"
+                          >
+                            <span>🔗</span> Share on LinkedIn
+                          </a>
+                          <a
+                            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("I just optimized my resume competitiveness index using ATS Killer! Try it for yourself:")}&url=${encodeURIComponent("https://ats-killer.vercel.app")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => setShowShareMenu(false)}
+                            className="w-full text-[10px] font-bold text-[#4E453F] hover:text-[#D97706] hover:bg-[#FAF8F5] p-2 rounded-lg flex items-center gap-2 cursor-pointer transition-all"
+                          >
+                            <span>🐦</span> Share on X / Twitter
+                          </a>
+                          <button
+                            onClick={handleCopyLink}
+                            className="w-full text-left text-[10px] font-bold text-[#4E453F] hover:text-[#D97706] hover:bg-[#FAF8F5] p-2 rounded-lg flex items-center gap-2 cursor-pointer transition-all border-none bg-transparent"
+                          >
+                            <span>📋</span> Copy Referral Link
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 
