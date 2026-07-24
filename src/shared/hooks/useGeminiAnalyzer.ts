@@ -332,47 +332,81 @@ export const useGeminiAnalyzer = (): UseGeminiAnalyzerReturn => {
   );
 
   const rewriteBullet = useCallback(async (originalText: string, contextDescription: string) => {
-    const headers = await getAuthHeaders();
-    const response = await fetch("/api/rewrite", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ originalText, contextDescription }),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(errText || "Failed to rewrite bullet point");
-    }
-
-    const data = await response.json();
-
-    // Track fix this clicked event (non-PII) - keep optional for safety
     try {
-      if (typeof window !== "undefined" && (window as any)?.posthog?.capture) {
-        (window as any).posthog.capture("fix_this_clicked");
-      }
-    } catch {
-      // ignore
-    }
+      const headers = await getAuthHeaders();
+      const response = await fetch("/api/rewrite", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ originalText, contextDescription }),
+      });
 
-    return data.rewrittenText;
-  }, []);
+      if (!response.ok) {
+        const status = response.status;
+        const errText = await response.text();
+        if (status === 401) {
+          showToast("Session expired, please log in again", "error");
+          throw new Error("Session expired, please log in again");
+        }
+        if (status === 429) {
+          showToast("Analysis is taking longer than usual, please try again in a moment", "warning");
+          throw new Error("Rate limit exceeded");
+        }
+        showToast("Something went wrong, please retry", "error");
+        throw new Error(errText || "Failed to rewrite bullet point");
+      }
+
+      const data = await response.json();
+
+      // Track fix this clicked event (non-PII) - keep optional for safety
+      try {
+        if (typeof window !== "undefined" && (window as any)?.posthog?.capture) {
+          (window as any).posthog.capture("fix_this_clicked");
+        }
+      } catch {
+        // ignore
+      }
+
+      return data.rewrittenText;
+    } catch (e: any) {
+      if (!e?.message?.includes("Session expired") && !e?.message?.includes("Rate limit")) {
+        showToast("Something went wrong, please retry", "error");
+      }
+      throw e;
+    }
+  }, [showToast]);
 
   const analyzeJobMatch = useCallback(async (resumeText: string, jdText: string) => {
-    const headers = await getAuthHeaders();
-    const response = await fetch("/api/job-match", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ resume: resumeText, jd: jdText }),
-    });
+    try {
+      const headers = await getAuthHeaders();
+      const response = await fetch("/api/job-match", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ resume: resumeText, jd: jdText }),
+      });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(errText || "Failed to analyze job match");
+      if (!response.ok) {
+        const status = response.status;
+        const errText = await response.text();
+        if (status === 401) {
+          showToast("Session expired, please log in again", "error");
+          throw new Error("Session expired, please log in again");
+        }
+        if (status === 429) {
+          showToast("Analysis is taking longer than usual, please try again in a moment", "warning");
+          throw new Error("Rate limit exceeded");
+        }
+        showToast("Something went wrong, please retry", "error");
+        throw new Error(errText || "Failed to analyze job match");
+      }
+
+      return (await response.json()) as JobMatchResult;
+    } catch (e: any) {
+      if (!e?.message?.includes("Session expired") && !e?.message?.includes("Rate limit")) {
+        showToast("Something went wrong, please retry", "error");
+      }
+      throw e;
     }
-
-    return (await response.json()) as JobMatchResult;
-  }, []);
+  }, [showToast]);
 
   const chatWithCopilot = useCallback(
     async (
@@ -384,30 +418,47 @@ export const useGeminiAnalyzer = (): UseGeminiAnalyzerReturn => {
       quickWins: any[],
       _extra?: any[],
     ) => {
-      const headers = await getAuthHeaders();
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          question,
-          messages,
-          resume: resumeText,
-          context: payload,
-          jobMatchResult,
-          quickWins,
-        }),
-      });
+      try {
+        const headers = await getAuthHeaders();
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            question,
+            messages,
+            resume: resumeText,
+            context: payload,
+            jobMatchResult,
+            quickWins,
+          }),
+        });
 
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(errText || "Failed to chat with copilot");
+        if (!response.ok) {
+          const status = response.status;
+          const errText = await response.text();
+          if (status === 401) {
+            showToast("Session expired, please log in again", "error");
+            throw new Error("Session expired, please log in again");
+          }
+          if (status === 429) {
+            showToast("Analysis is taking longer than usual, please try again in a moment", "warning");
+            throw new Error("Rate limit exceeded");
+          }
+          showToast("Something went wrong, please retry", "error");
+          throw new Error(errText || "Failed to chat with copilot");
+        }
+
+        const data = await response.json();
+        // Tests expect: data.reply
+        return data.reply as string;
+      } catch (e: any) {
+        if (!e?.message?.includes("Session expired") && !e?.message?.includes("Rate limit")) {
+          showToast("Something went wrong, please retry", "error");
+        }
+        throw e;
       }
-
-      const data = await response.json();
-      // Tests expect: data.reply
-      return data.reply as string;
     },
-    []
+    [showToast]
   );
 
   return useMemo(
