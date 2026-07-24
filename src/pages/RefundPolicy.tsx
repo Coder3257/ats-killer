@@ -33,7 +33,7 @@ export default function RefundPolicy({ onNavigate }: LegalPageProps) {
           </div>
 
           <p>
-            Thank you for choosing <strong>ATS Killer</strong>. Since our Service utilizes real-time API integrations and cloud resources (Google Gemini API) to perform analysis, we adhere to the following refund terms.
+            Thank you for choosing <strong>ATS Killer</strong>. Since our Service utilizes real-time API integrations and cloud resources (our third‑party AI provider) to perform analysis, we adhere to the following refund terms.
           </p>
 
           <hr className="border-[#F5F0E8]" />
