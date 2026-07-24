@@ -20,6 +20,8 @@ import {
 import { useAuth } from "../shared/contexts/AuthContext";
 import { useToast } from "../shared/contexts/ToastContext";
 import { UserRepository } from "../shared/repositories/UserRepository";
+import { useAnalysisStore } from "../shared/stores/analysisStore";
+import { useApplicationStore } from "../shared/stores/applicationStore";
 
 const CareerDashboard = lazy(() => import("./CareerDashboard"));
 const Analyzer = lazy(() => import("./Analyzer"));
@@ -67,9 +69,22 @@ export default function DashboardLayout({ onLogout }: DashboardLayoutProps) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showCreditsMenu, setShowCreditsMenu] = useState(false);
 
+  const [showPlanModal, setShowPlanModal] = useState(false);
   const [profileName, setProfileName] = useState("");
   const [profileAvatar, setProfileAvatar] = useState("");
   const [updatingProfile, setUpdatingProfile] = useState(false);
+
+  const analysisHistory = useAnalysisStore((state) => state.history);
+  const loadAnalysisHistory = useAnalysisStore((state) => state.loadHistory);
+  const applications = useApplicationStore((state) => state.applications);
+  const loadApplications = useApplicationStore((state) => state.loadApplications);
+
+  useEffect(() => {
+    if (user?.id) {
+      loadAnalysisHistory(user.id).catch(() => {});
+      loadApplications(user.id).catch(() => {});
+    }
+  }, [user?.id, loadAnalysisHistory, loadApplications]);
 
   useEffect(() => {
     if (profile) {
@@ -173,6 +188,20 @@ export default function DashboardLayout({ onLogout }: DashboardLayoutProps) {
             >
               <Menu className="h-5 w-5" />
             </button>
+            <div className="hidden md:flex items-center gap-4">
+              <span className="text-xs font-bold text-[#1C1008]">
+                Welcome back, <span className="text-[#D97706]">{profile?.full_name || user?.email || "Premium Guest"}</span>
+              </span>
+              <div className="h-4 w-[1px] bg-[#E5E0D8]/60" />
+              <div className="flex items-center gap-2 text-[10px] font-mono font-bold text-[#4E453F]">
+                <span className="bg-[#FAF8F5] border border-[#E5E0D8]/60 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                  📊 <span className="text-[#1C1008]">{analysisHistory.length}</span> Scans
+                </span>
+                <span className="bg-[#FAF8F5] border border-[#E5E0D8]/60 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                  💼 <span className="text-[#1C1008]">{applications.length}</span> Applications
+                </span>
+              </div>
+            </div>
           </div>
  
           <div className="flex items-center gap-4.5">
@@ -181,9 +210,10 @@ export default function DashboardLayout({ onLogout }: DashboardLayoutProps) {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setShowCreditsMenu(!showCreditsMenu);
+                  setShowPlanModal(true);
                   setShowNotifications(false);
                   setShowProfileMenu(false);
+                  setShowCreditsMenu(false);
                 }}
                 className="bg-[#FAF8F5] border border-[#E5E0D8]/40 hover:bg-[#F5F0E8] transition-colors px-3 py-1.5 rounded-xl flex items-center gap-1.5 text-xs font-mono font-bold text-[#1C1008] cursor-pointer animate-fade-in"
               >
@@ -421,9 +451,20 @@ export default function DashboardLayout({ onLogout }: DashboardLayoutProps) {
                 <div className="h-8 w-8 bg-[#FEF3C7] border border-[#D97706]/20 rounded-full flex items-center justify-center text-[#D97706] shadow-sm">
                   <User className="h-4 w-4" />
                 </div>
-                <div className="text-left hidden sm:block">
+                 <div className="text-left hidden sm:block">
                   <p className="text-xs font-bold text-[#1C1008]">{profile?.full_name || "Premium Guest"}</p>
-                  <p className="text-[9px] font-mono text-[#D97706] font-extrabold uppercase">SaaS Active</p>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowPlanModal(true);
+                      setShowProfileMenu(false);
+                      setShowNotifications(false);
+                      setShowCreditsMenu(false);
+                    }}
+                    className="text-[9px] font-mono text-[#D97706] font-extrabold uppercase hover:underline cursor-pointer block text-left"
+                  >
+                    SaaS Active
+                  </button>
                 </div>
               </button>
  
@@ -760,6 +801,54 @@ export default function DashboardLayout({ onLogout }: DashboardLayoutProps) {
             </div>
           </aside>
         </>
+      )}
+
+      {showPlanModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white border border-[#E5E0D8] rounded-3xl p-6 shadow-2xl max-w-sm w-full mx-4 space-y-4 animate-pop-in">
+            <div className="flex justify-between items-center border-b border-[#E5E0D8]/60 pb-3">
+              <h3 className="text-sm font-extrabold text-[#1C1008] uppercase tracking-wide font-mono">Plan Details</h3>
+              <button 
+                onClick={() => setShowPlanModal(false)}
+                className="text-stone-400 hover:text-[#1C1008] cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="space-y-2.5 py-2">
+              <p className="text-xs text-[#4E453F]">
+                Your Current Plan:{" "}
+                <span className="font-extrabold text-[#1C1008] block text-sm mt-1">
+                  {profile?.lifetime_access ? "✨ Lifetime Access" : `Free — ${profile?.credits ?? 50} credits left`}
+                </span>
+              </p>
+              <p className="text-[11px] text-[#4E453F]/80 leading-relaxed">
+                {profile?.lifetime_access 
+                  ? "Thank you for being a lifetime member! You have infinite credits for scanning and intelligence features."
+                  : "Upgrade to unlock unlimited resume scans, Recruiter View™ diagnostics, and unlimited AI assistant chats."}
+              </p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setShowPlanModal(false)}
+                className="flex-1 bg-[#FAF8F5] border border-[#E5E0D8] hover:bg-[#F5F0E8] text-[#1C1008] py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+              >
+                Dismiss
+              </button>
+              {!profile?.lifetime_access && (
+                <button
+                  onClick={() => {
+                    setActiveTab("billing");
+                    setShowPlanModal(false);
+                  }}
+                  className="flex-1 bg-[#D97706] hover:bg-[#B45309] text-white py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer text-center"
+                >
+                  Upgrade Plan
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
     </div>
