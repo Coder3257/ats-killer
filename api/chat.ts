@@ -69,7 +69,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       resumeMemory,
       applicationMemory,
       interviewMemory,
+      // Frontend payload fallbacks
+      question,
+      messages,
+      resume,
+      context,
+      jobMatchResult,
+      quickWins,
     } = req.body || {};
+
+    const activeQuery = query || question || "";
+    const activeHistory = history || messages || [];
+    const activeResumeText = resumeText || resume || "";
+    const activeKnowledgeGraph = knowledgeGraph || context || {};
+    const activeResumeMemory = resumeMemory || jobMatchResult || [];
+    const activeApplicationMemory = applicationMemory || quickWins || [];
+    const activeInterviewMemory = interviewMemory || [];
 
     const cleanKey = (process.env.GEMINI_API_KEY || "").trim();
     if (!cleanKey) {
@@ -79,13 +94,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const ai = new GoogleGenAI({ apiKey: cleanKey });
 
     const contextPrompt = getCopilotChatPrompt(
-      query,
-      history,
-      resumeText,
-      knowledgeGraph,
-      resumeMemory,
-      applicationMemory,
-      interviewMemory
+      activeQuery,
+      activeHistory,
+      activeResumeText,
+      activeKnowledgeGraph,
+      activeResumeMemory,
+      activeApplicationMemory,
+      activeInterviewMemory
     );
 
     let response;

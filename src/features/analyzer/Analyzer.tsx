@@ -29,6 +29,7 @@ import {
   AnalysisResult,
   QuickWin,
 } from "../../hooks/useGeminiAnalyzer";
+import { useAnalysisStore } from "../../shared/stores/analysisStore";
 import { supabase } from "../../shared/services/supabase/client";
 import { LoadingSequence, DiagnosticModal } from "../../components";
 import { lazy } from "react";
@@ -80,9 +81,11 @@ interface AnalyzerProps {
 export default function Analyzer({ onAuthRequired }: AnalyzerProps) {
   const { loading, result, error, analyze, reset, rewriteBullet } = useGeminiAnalyzer();
 
-  // State
-  const [resume, setResume] = useState("");
-  const [jd, setJd] = useState("");
+  // Shared Store State
+  const resume = useAnalysisStore((state) => state.resumeInput);
+  const setResume = useAnalysisStore((state) => state.setResumeInput);
+  const jd = useAnalysisStore((state) => state.jdInput);
+  const setJd = useAnalysisStore((state) => state.setJdInput);
 
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [copiedWins, setCopiedWins] = useState(false);
