@@ -96,7 +96,10 @@ export default function Pricing() {
             alert(`Success! Your account has been upgraded to the ${planName} plan.`);
             window.location.reload(); // Refresh to load upgraded limits/billing state
           } catch (err: any) {
-            setErrorMessage(err.message || "Failed to verify payment transaction.");
+            console.error("Payment verification/provisioning error:", err);
+            setErrorMessage(
+              `Payment verification failed: ${err.message}. If money was deducted from your account, please contact support with payment ID: ${response.razorpay_payment_id}.`
+            );
           } finally {
             setLoadingPlan(null);
           }
