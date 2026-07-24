@@ -954,6 +954,7 @@ export default function JobSearchWorkspace({ initialResult, resume }: JobSearchW
                           onClick={() => setActiveDiagnosticDetail({
                             title: "Start Optimization Scan",
                             description: "Run an analysis on your resume to populate the applications tracker and begin tracking your weekly pipeline.",
+                            details: [],
                             actionItems: ["Navigate to the Analyzer tab to run a match scan."]
                           })}
                           className="px-4 py-2 bg-[#1C1008] text-white hover:bg-stone-900 transition-colors rounded-xl text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer"

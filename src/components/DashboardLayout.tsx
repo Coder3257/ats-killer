@@ -523,7 +523,7 @@ export default function DashboardLayout({ onLogout }: DashboardLayoutProps) {
 
             {activeTab === "applications" && (
               result ? (
-                <ApplicationBoard />
+                <JobSearchWorkspace initialResult={result} resume={resume} />
               ) : (
                 <div className="bg-white border border-[#E5E0D8] rounded-3xl p-12 text-center max-w-md mx-auto space-y-5 my-12 premium-shadow">
                   <Briefcase className="h-12 w-12 text-stone-300 mx-auto" />

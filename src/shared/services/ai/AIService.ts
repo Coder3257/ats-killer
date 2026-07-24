@@ -21,7 +21,7 @@ export class AIService {
      * Retries once on network/timeout errors (as identified by RetryHandler).
      * Shows appropriate toast messages for rate limiting (429) and generic failures.
      */
-    static async handleGeminiCall(params: { apiKey: string; model: string; contents: string; responseMimeType?: "application/json" }, showToast?: (msg: string, type: import("../contexts/ToastContext").ToastType) => void): Promise<{ text: string }> {
+    static async handleGeminiCall(params: { apiKey: string; model: string; contents: string; responseMimeType?: "application/json" }, showToast?: (msg: string, type: import("../../contexts/ToastContext").ToastType) => void): Promise<{ text: string }> {
         try {
             const response = await GeminiProvider.generateContent(params);
             return response;
@@ -35,6 +35,7 @@ export class AIService {
             // Retry for network/timeout errors (using RetryHandler's logic)
             if (RetryHandler.shouldRetryOnce(err)) {
                 try {
+                    await new Promise((resolve) => setTimeout(resolve, 2000));
                     const retryResponse = await GeminiProvider.generateContent(params);
                     return retryResponse;
                 } catch (retryErr) {
@@ -161,7 +162,7 @@ export class AIService {
 
         TokenEstimator.estimatePromptSize(promptText);
 
-        const response = await GeminiProvider.generateContent({
+        const response = await AIService.handleGeminiCall({
             apiKey: cleanKey,
             model: PromptRegistry.getGeminiModel(),
             contents: promptText,
