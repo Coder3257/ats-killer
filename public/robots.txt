@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /analyzer
+Disallow: /auth
+
+Sitemap: https://ats-killer.vercel.app/sitemap.xml
