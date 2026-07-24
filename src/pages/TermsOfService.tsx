@@ -44,7 +44,7 @@ export default function TermsOfService({ onNavigate }: LegalPageProps) {
           <section className="space-y-3">
             <h2 className="text-lg font-bold text-[#1C1008]">1. Service Description</h2>
             <p>
-              ATS Killer is an AI-powered resume analysis and optimization platform. It utilizes the Google Gemini API to scan resumes against target job descriptions, provide matching scores, identify skill gaps, and suggest optimizations to align your resume with Applicant Tracking Systems (ATS).
+              ATS Killer is an AI-powered resume analysis and optimization platform. It utilizes the AI analysis API to scan resumes against target job descriptions, provide matching scores, identify skill gaps, and suggest optimizations to align your resume with Applicant Tracking Systems (ATS).
             </p>
           </section>
 
