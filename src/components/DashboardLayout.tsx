@@ -239,25 +239,29 @@ export default function DashboardLayout({ onLogout }: DashboardLayoutProps) {
             >
               <Menu className="h-5 w-5" />
             </button>
-            <div className="hidden md:flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-3">
               <span className="text-xs font-bold text-[#1C1008]">
                 Welcome back, <span className="text-[#D97706]">{profile?.full_name || user?.email || "Premium Guest"}</span>
               </span>
               <div className="h-4 w-[1px] bg-[#E5E0D8]/60" />
-              <div className="flex items-center gap-2 text-[10px] font-mono font-bold text-[#4E453F]">
-                <span className="bg-[#FAF8F5] border border-[#E5E0D8]/60 px-2 py-0.5 rounded-lg flex items-center gap-1">
-                  📊 <span className="text-[#1C1008]">{analysisHistory.length}</span> Scans
-                </span>
-                <span className="bg-[#FAF8F5] border border-[#E5E0D8]/60 px-2 py-0.5 rounded-lg flex items-center gap-1">
-                  💼 <span className="text-[#1C1008]">{applications.length}</span> Applications
-                </span>
-                <span className="bg-[#FAF8F5] border border-[#E5E0D8]/60 px-2 py-0.5 rounded-lg flex items-center gap-1">
-                  🔥 <span className="text-[#1C1008]">{currentStreak}d</span> Streak
-                </span>
-                <span className="bg-[#FAF8F5] border border-[#E5E0D8]/60 px-2 py-0.5 rounded-lg flex items-center gap-1">
-                  📅 <span className="text-[#1C1008]">{weeklyScans}</span> This Week
-                </span>
-              </div>
+            </div>
+            <div className="flex items-center gap-1.5 md:gap-2 text-[10px] font-mono font-bold text-[#4E453F]">
+              <span className="bg-[#FAF8F5] border border-[#E5E0D8]/60 px-1.5 py-0.5 md:px-2 md:py-0.5 rounded-lg flex items-center gap-1">
+                📊 <span className="text-[#1C1008]">{analysisHistory.length}</span>
+                <span className="hidden sm:inline"> Scans</span>
+              </span>
+              <span className="bg-[#FAF8F5] border border-[#E5E0D8]/60 px-1.5 py-0.5 md:px-2 md:py-0.5 rounded-lg flex items-center gap-1">
+                💼 <span className="text-[#1C1008]">{applications.length}</span>
+                <span className="hidden sm:inline"> Applications</span>
+              </span>
+              <span className="bg-[#FAF8F5] border border-[#E5E0D8]/60 px-1.5 py-0.5 md:px-2 md:py-0.5 rounded-lg flex items-center gap-1">
+                🔥 <span className="text-[#1C1008]">{currentStreak}d</span>
+                <span className="hidden sm:inline"> Streak</span>
+              </span>
+              <span className="bg-[#FAF8F5] border border-[#E5E0D8]/60 px-1.5 py-0.5 md:px-2 md:py-0.5 rounded-lg flex items-center gap-1">
+                📅 <span className="text-[#1C1008]">{weeklyScans}</span>
+                <span className="hidden sm:inline"> This Week</span>
+              </span>
             </div>
           </div>
  
