@@ -8,7 +8,7 @@ export default function Hero() {
   const [keywordCount, setKeywordCount] = useState(8);
 
   const handleScrollToDemo = () => {
-    const demoElement = document.getElementById("demo");
+    const demoElement = document.getElementById("analyzer");
     if (demoElement) {
       demoElement.scrollIntoView({ behavior: "smooth" });
     }

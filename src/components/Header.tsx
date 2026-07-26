@@ -78,7 +78,7 @@ export default function Header({ onAuthClick, inDashboard, onDashboardClick, onN
             </button>
             <button
               onClick={() => {
-                handleScroll("demo");
+                handleScroll("analyzer");
                 // Track demo tab
                 try {
                   if (typeof window !== 'undefined') {
@@ -159,7 +159,7 @@ export default function Header({ onAuthClick, inDashboard, onDashboardClick, onN
             </button>
             <button
               onClick={() => {
-                handleScroll("demo");
+                handleScroll("analyzer");
                 // Track demo tab (from CTA)
                 try {
                   if (typeof window !== 'undefined') {
@@ -292,7 +292,7 @@ export default function Header({ onAuthClick, inDashboard, onDashboardClick, onN
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  handleScroll("demo");
+                  handleScroll("analyzer");
                   // Track demo tab from mobile menu
                   try {
                     if (typeof window !== 'undefined') {
