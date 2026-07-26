@@ -1,6 +1,5 @@
-import React, { useState, useRef, useEffect, Suspense } from "react";
+import React, { useState, useRef, useEffect, Suspense, useMemo } from "react";
 import {
-
   FileText,
   Briefcase,
   Sparkles,
@@ -82,6 +81,13 @@ interface AnalyzerProps {
 export default function Analyzer({ onAuthRequired }: AnalyzerProps) {
   const { loading, result, error, analyze, reset, rewriteBullet } = useGeminiAnalyzer();
   const { showToast } = useToast();
+
+  const projectedScore = useMemo(() => {
+    if (!result) return 0;
+    const currentScore = result.score || 0;
+    const winsSum = (result.quick_wins || []).reduce((acc: number, win: any) => acc + (win.impact_increase || 0), 0);
+    return Math.min(100, currentScore + winsSum);
+  }, [result]);
 
   // Shared Store State
   const resume = useAnalysisStore((state) => state.resumeInput);
@@ -634,6 +640,16 @@ qualifications. Don't trim it — every word matters.`}
                   <span className={`px-4 py-1.5 rounded-full text-xs font-mono font-bold uppercase tracking-wider ${grade.bgClass}`}>
                     {grade.label}
                   </span>
+
+                  {/* Projected score calculation display */}
+                  <div className="text-center space-y-0.5 mt-1 select-none">
+                    <p className="text-[11px] font-bold text-[#4E453F]">
+                      Current: <span className="font-extrabold text-[#1C1008]">{result.score}</span> → Potential: <span className="font-extrabold text-[#10B981]">{projectedScore}</span>
+                    </p>
+                    <p className="text-[8px] font-semibold text-stone-400 uppercase tracking-wider">
+                      *Projected if all quick wins applied
+                    </p>
+                  </div>
                 </div>
 
                 {/* Bars & Metrics */}
