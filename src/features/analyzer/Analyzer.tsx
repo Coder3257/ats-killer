@@ -168,15 +168,10 @@ export default function Analyzer({ onAuthRequired }: AnalyzerProps) {
 
   // Analyze trigger
   const handleAnalyze = async () => {
-    if (!user) {
-      showToast("You have to sign in first to scan your resume.", "error");
-      onAuthRequired();
-      return;
-    }
     try {
       setRewrites({});
       setSelectedAts(null);
-      await analyze(resume, jd);
+      await analyze(resume, jd, !user);
     } catch (err) {
       // Error handled by hook and exposed through state
     }
@@ -586,23 +581,25 @@ qualifications. Don't trim it — every word matters.`}
                   <h3 className="text-xl font-extrabold text-[#1C1008] tracking-tight group-hover:text-[#D97706] transition-colors">
                     ATS Compatibility Score
                   </h3>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCopySummary();
-                    }}
-                    className="p-2 bg-[#FAF8F5] hover:bg-[#F5F0E8] text-[#D97706] rounded-xl border border-[#E5E0D8]/60 transition-all flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-pointer"
-                  >
-                    {copiedSummary ? (
-                      <>
-                        <Check className="h-3.5 w-3.5 text-[#10B981]" /> Copied!
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-3.5 w-3.5" /> Copy Summary
-                      </>
-                    )}
-                  </button>
+                  {user && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCopySummary();
+                      }}
+                      className="p-2 bg-[#FAF8F5] hover:bg-[#F5F0E8] text-[#D97706] rounded-xl border border-[#E5E0D8]/60 transition-all flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-pointer"
+                    >
+                      {copiedSummary ? (
+                        <>
+                          <Check className="h-3.5 w-3.5 text-[#10B981]" /> Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3.5 w-3.5" /> Copy Summary
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
                 <span className="text-[10px] font-mono text-[#D97706] font-bold group-hover:underline">Click to view diagnostics →</span>
               </div>
@@ -747,8 +744,9 @@ qualifications. Don't trim it — every word matters.`}
                 <span className="text-[10px] font-mono text-[#EF4444] font-bold group-hover:underline self-center shrink-0">Click to view diagnostics →</span>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-4 relative">
                 {result.rejection_reasons.map((reason, idx) => {
+                  const isLocked = !user && idx > 0;
                   const fixState = fixes[idx];
                   const isFixing = !!fixState?.loading;
                   const hasFixText = !!fixState?.text;
@@ -758,7 +756,9 @@ qualifications. Don't trim it — every word matters.`}
                     <div
                       key={idx}
                       style={{ animationDelay: `${idx * 80}ms` }}
-                      className="bg-[#FAF8F5] border border-[#E5E0D8] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in-up"
+                      className={`bg-[#FAF8F5] border border-[#E5E0D8] rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in-up transition-all ${
+                        isLocked ? "blur-[3px] opacity-40 pointer-events-none select-none" : ""
+                      }`}
                     >
                       <div className="flex items-start gap-3 w-full sm:w-auto">
                         {reason.severity === "HIGH" ? (
@@ -869,6 +869,23 @@ qualifications. Don't trim it — every word matters.`}
                     </div>
                   );
                 })}
+
+                {/* Lock Overlay for Rejection Reasons */}
+                {!user && result.rejection_reasons.length > 1 && (
+                  <div className="absolute inset-x-0 bottom-0 top-[110px] bg-gradient-to-t from-white via-white/95 to-transparent flex flex-col items-center justify-end text-center pb-6 z-10">
+                    <div className="bg-white border border-[#E5E0D8] p-6 rounded-3xl premium-shadow max-w-sm space-y-4">
+                      <p className="text-sm font-extrabold text-[#1C1008] leading-snug">
+                        Sign in to see all {result.rejection_reasons.length} reasons + fixes
+                      </p>
+                      <button
+                        onClick={onAuthRequired}
+                        className="w-full py-2.5 bg-[#1C1008] text-[#FAF8F5] hover:bg-[#1C1008]/90 transition-colors rounded-xl text-xs font-bold cursor-pointer"
+                      >
+                        Sign In Now
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1016,138 +1033,159 @@ qualifications. Don't trim it — every word matters.`}
             </div>
 
             {/* CARD 5: QUICK WINS & IMPACT CALCULATOR & INLINE REWRITING (dark card) */}
-            <div className="bg-[#1C1008] rounded-3xl p-7 premium-shadow hover:-translate-y-[3px] transition-transform duration-200 ease-out">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="h-6 w-6 text-[#D97706] shrink-0" />
-                <h3 className="text-xl font-bold text-white tracking-tight">
-                  Your 3 Quick Wins
-                </h3>
-              </div>
-              <p className="text-white/60 text-xs font-medium pl-8 mb-6">
-                Fix these first. Sorted by estimated ATS compatibility score impact.
-              </p>
+            <div className="bg-[#1C1008] rounded-3xl p-7 premium-shadow hover:-translate-y-[3px] transition-transform duration-200 ease-out relative overflow-hidden">
+              <div className={!user ? "blur-[3px] opacity-40 pointer-events-none select-none" : ""}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Zap className="h-6 w-6 text-[#D97706] shrink-0" />
+                  <h3 className="text-xl font-bold text-white tracking-tight">
+                    Your 3 Quick Wins
+                  </h3>
+                </div>
+                <p className="text-white/60 text-xs font-medium pl-8 mb-6">
+                  Fix these first. Sorted by estimated ATS compatibility score impact.
+                </p>
 
-              <div className="space-y-4">
-                {sortedQuickWins.slice(0, 3).map((win, idx) => {
-                  const isRewriting = rewrites[idx]?.loading;
-                  const hasRewrite = !!rewrites[idx]?.text;
-                  const rewriteError = rewrites[idx]?.error;
-                  return (
-                    <div
-                      key={idx}
-                      className="bg-white/5 rounded-2xl p-4 flex flex-col gap-3 border border-white/5"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 w-full">
-                        <div className="flex items-start gap-3">
-                          <span className="text-[#D97706] text-xl font-extrabold font-mono leading-none mt-0.5">
-                            {idx + 1}
-                          </span>
-                          <div className="space-y-1">
-                            <p className="text-sm font-bold text-white">{win.title}</p>
-                            <p className="text-xs text-white/70 leading-relaxed font-medium">{win.description}</p>
-                          </div>
-                        </div>
-
-                        {/* Impact Statistics */}
-                        <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 shrink-0 self-start sm:self-auto pl-7 sm:pl-0">
-                          <span className="bg-[#FEF3C7] text-[#92400E] text-[10px] font-mono font-bold px-2 py-0.5 rounded flex items-center gap-0.5 shadow-sm uppercase shrink-0">
-                            <TrendingUp className="h-3 w-3 shrink-0" /> +{win.impact_increase} Score
-                          </span>
-                          <span className="text-[9px] font-mono font-medium text-white/40 flex items-center gap-0.5 shrink-0 uppercase">
-                            <Clock className="h-2.5 w-2.5 shrink-0" /> {win.time_required}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* original context + rewrite launcher */}
-                      {win.original_context && (
-                        <div className="mt-2 pt-3 border-t border-white/5 flex flex-col sm:flex-row sm:items-start justify-between gap-3 bg-white/2 p-3 rounded-xl border border-white/2">
-                          <div className="space-y-0.5">
-                            <p className="text-[9px] font-mono uppercase tracking-wider text-white/40 font-bold">Your current draft</p>
-                            <p className="text-xs text-white/80 leading-relaxed font-medium italic pr-4">"{win.original_context}"</p>
-                          </div>
-
-                          {isRewriting ? (
-                            <div className="py-1 self-end sm:self-center">
-                              <LoadingSequence steps={["Scanning bullet...", "Polishing vocabulary...", "Applying metrics..."]} />
+                <div className="space-y-4">
+                  {sortedQuickWins.slice(0, 3).map((win, idx) => {
+                    const isRewriting = rewrites[idx]?.loading;
+                    const hasRewrite = !!rewrites[idx]?.text;
+                    const rewriteError = rewrites[idx]?.error;
+                    return (
+                      <div
+                        key={idx}
+                        className="bg-white/5 rounded-2xl p-4 flex flex-col gap-3 border border-white/5"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 w-full">
+                          <div className="flex items-start gap-3">
+                            <span className="text-[#D97706] text-xl font-extrabold font-mono leading-none mt-0.5">
+                              {idx + 1}
+                            </span>
+                            <div className="space-y-1">
+                              <p className="text-sm font-bold text-white">{win.title}</p>
+                              <p className="text-xs text-white/70 leading-relaxed font-medium">{win.description}</p>
                             </div>
-                          ) : (
-                            <button
-                              onClick={() => handleRewriteBullet(idx, win.original_context, win.description)}
-                              className="bg-[#D97706] text-[#1C1008] hover:bg-[#D97706]/90 transition-all font-bold text-[10px] px-3 py-1.5 rounded-lg flex items-center gap-1 shrink-0 cursor-pointer duration-150 active:scale-[0.98] self-end sm:self-center"
-                            >
-                              <Sparkles className="h-3.5 w-3.5" />
-                              <span>Rewrite Bullet</span>
-                            </button>
-                          )}
+                          </div>
+
+                          {/* Impact Statistics */}
+                          <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 shrink-0 self-start sm:self-auto pl-7 sm:pl-0">
+                            <span className="bg-[#FEF3C7] text-[#92400E] text-[10px] font-mono font-bold px-2 py-0.5 rounded flex items-center gap-0.5 shadow-sm uppercase shrink-0">
+                              <TrendingUp className="h-3 w-3 shrink-0" /> +{win.impact_increase} Score
+                            </span>
+                            <span className="text-[9px] font-mono font-medium text-white/40 flex items-center gap-0.5 shrink-0 uppercase">
+                              <Clock className="h-2.5 w-2.5 shrink-0" /> {win.time_required}
+                            </span>
+                          </div>
                         </div>
-                      )}
 
-                      {/* Error in rewrite */}
-                      {rewriteError && (
-                        <div className="text-xs text-red-400 bg-red-950/20 p-2 rounded-xl border border-red-900/30 flex items-center gap-1.5 mt-2">
-                          <AlertCircle className="h-3.5 w-3.5" />
-                          <span>{rewriteError}</span>
-                        </div>
-                      )}
+                        {/* original context + rewrite launcher */}
+                        {win.original_context && (
+                          <div className="mt-2 pt-3 border-t border-white/5 flex flex-col sm:flex-row sm:items-start justify-between gap-3 bg-white/2 p-3 rounded-xl border border-white/2">
+                            <div className="space-y-0.5">
+                              <p className="text-[9px] font-mono uppercase tracking-wider text-white/40 font-bold">Your current draft</p>
+                              <p className="text-xs text-white/80 leading-relaxed font-medium italic pr-4">"{win.original_context}"</p>
+                            </div>
 
-                      {/* Expanded rewritten bullet */}
-                      <AnimatePresence>
-                        {hasRewrite && rewrites[idx]?.text && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="overflow-hidden mt-1"
-                          >
-                            <div className="bg-white/10 rounded-xl p-3 border border-white/10 relative mt-2">
-                              <p className="text-[9px] font-mono font-bold uppercase tracking-wider text-[#D97706] mb-1">
-                                AI Optimized Bullet Point
-                              </p>
-                              <p className="text-xs italic text-white pr-14 leading-relaxed font-medium font-sans">
-                                "{rewrites[idx].text}"
-                              </p>
-
+                            {isRewriting ? (
+                              <div className="py-1 self-end sm:self-center">
+                                <LoadingSequence steps={["Scanning bullet...", "Polishing vocabulary...", "Applying metrics..."]} />
+                              </div>
+                            ) : (
                               <button
-                                onClick={() => handleCopyInlineRewrite(idx, rewrites[idx].text || "")}
-                                className="absolute top-2.5 right-2.5 p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/10 transition-all flex items-center gap-1 text-[10px] font-bold shrink-0 cursor-pointer"
+                                onClick={() => handleRewriteBullet(idx, win.original_context, win.description)}
+                                className="bg-[#D97706] text-[#1C1008] hover:bg-[#D97706]/90 transition-all font-bold text-[10px] px-3 py-1.5 rounded-lg flex items-center gap-1 shrink-0 cursor-pointer duration-150 active:scale-[0.98] self-end sm:self-center"
                               >
-                                {rewrites[idx].copied ? (
-                                  <>
-                                    <Check className="h-3 w-3 text-[#10B981]" /> Copied!
-                                  </>
-                                ) : (
-                                  <>
-                                    <Copy className="h-3.5 w-3.5" /> Copy
-                                  </>
-                                )}
+                                <Sparkles className="h-3.5 w-3.5" />
+                                <span>Rewrite Bullet</span>
                               </button>
-                            </div>
-                          </motion.div>
+                            )}
+                          </div>
                         )}
-                      </AnimatePresence>
 
-                    </div>
-                  );
-                })}
+                        {/* Error in rewrite */}
+                        {rewriteError && (
+                          <div className="text-xs text-red-400 bg-red-950/20 p-2 rounded-xl border border-red-900/30 flex items-center gap-1.5 mt-2">
+                            <AlertCircle className="h-3.5 w-3.5" />
+                            <span>{rewriteError}</span>
+                          </div>
+                        )}
+
+                        {/* Expanded rewritten bullet */}
+                        <AnimatePresence>
+                          {hasRewrite && rewrites[idx]?.text && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: "auto", opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="overflow-hidden mt-1"
+                            >
+                              <div className="bg-white/10 rounded-xl p-3 border border-white/10 relative mt-2">
+                                <p className="text-[9px] font-mono font-bold uppercase tracking-wider text-[#D97706] mb-1">
+                                  AI Optimized Bullet Point
+                                </p>
+                                <p className="text-xs italic text-white pr-14 leading-relaxed font-medium font-sans">
+                                  "{rewrites[idx].text}"
+                                </p>
+
+                                <button
+                                  onClick={() => handleCopyInlineRewrite(idx, rewrites[idx].text || "")}
+                                  className="absolute top-2.5 right-2.5 p-2 bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/10 transition-all flex items-center gap-1 text-[10px] font-bold shrink-0 cursor-pointer"
+                                >
+                                  {rewrites[idx].copied ? (
+                                    <>
+                                      <Check className="h-3 w-3 text-[#10B981]" /> Copied!
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy className="h-3.5 w-3.5" /> Copy
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
-              <button
-                onClick={handleCopyQuickWins}
-                className="bg-[#D97706] text-[#1C1008] hover:bg-[#D97706]/90 active:scale-[0.98] transition-all duration-200 font-bold rounded-2xl py-3.5 w-full mt-6 flex items-center justify-center gap-2 cursor-pointer text-sm"
-              >
-                {copiedWins ? (
-                  <>
-                    <Check className="h-4 w-4 stroke-[3]" />
-                    <span>Copied all quick wins!</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4" />
-                    <span>Copy All Quick Wins</span>
-                  </>
-                )}
-              </button>
+              {/* Lock Overlay for Quick Wins */}
+              {!user && (
+                <div className="absolute inset-0 bg-[#1C1008]/85 flex flex-col items-center justify-center text-center p-6 z-10">
+                  <div className="bg-white border border-[#E5E0D8] p-6 rounded-3xl premium-shadow max-w-sm space-y-4">
+                    <p className="text-sm font-extrabold text-[#1C1008]">
+                      Sign in to see all Quick Wins + corrections
+                    </p>
+                    <button
+                      onClick={onAuthRequired}
+                      className="w-full py-2.5 bg-[#1C1008] text-white hover:bg-stone-900 transition-colors rounded-xl text-xs font-bold cursor-pointer"
+                    >
+                      Sign In Now
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {user && (
+                <button
+                  onClick={handleCopyQuickWins}
+                  className="bg-[#D97706] text-[#1C1008] hover:bg-[#D97706]/90 active:scale-[0.98] transition-all duration-200 font-bold rounded-2xl py-3.5 w-full mt-6 flex items-center justify-center gap-2 cursor-pointer text-sm"
+                >
+                  {copiedWins ? (
+                    <>
+                      <Check className="h-4 w-4 stroke-[3]" />
+                      <span>Copied all quick wins!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      <span>Copy All Quick Wins</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
 
             {/* CARD 6: ATS SIMULATOR CARD */}
@@ -1537,22 +1575,24 @@ qualifications. Don't trim it — every word matters.`}
             </div>
 
             {/* Results sections wrapped in Suspense */}
-            <Suspense fallback={<div className="max-w-md mx-auto my-12"><LoadingSequence steps={["Loading..."]} /></div>}>
-              {/* Career Intelligence Section */}
-              <CareerIntelligence result={result} animate={animateBars} />
+            {user && (
+              <Suspense fallback={<div className="max-w-md mx-auto my-12"><LoadingSequence steps={["Loading..."]} /></div>}>
+                {/* Career Intelligence Section */}
+                <CareerIntelligence result={result} animate={animateBars} />
 
-              {/* Job Search Workspace Section */}
-              <JobSearchWorkspace initialResult={result} resume={resume} />
+                {/* Job Search Workspace Section */}
+                <JobSearchWorkspace initialResult={result} resume={resume} />
 
-              {/* Career Dashboard Section */}
-              <CareerDashboard result={result} animate={animateBars} onNavigateTab={() => { }} />
+                {/* Career Dashboard Section */}
+                <CareerDashboard result={result} animate={animateBars} onNavigateTab={() => { }} />
 
-              {/* AI Career Copilot Section */}
-              <AICareerCopilot result={result} resume={resume} />
+                {/* AI Career Copilot Section */}
+                <AICareerCopilot result={result} resume={resume} />
 
-              {/* AI Opportunity Engine Section */}
-              <AIOpportunityEngine result={result} animate={animateBars} />
-            </Suspense>
+                {/* AI Opportunity Engine Section */}
+                <AIOpportunityEngine result={result} animate={animateBars} />
+              </Suspense>
+            )}
 
             {/* Reset Button */}
             <div className="flex justify-center mt-10">

@@ -212,7 +212,7 @@ export const useGeminiAnalyzer = (): UseGeminiAnalyzerReturn => {
   }, []);
 
   const analyze = useCallback(
-    async (resume: string, jd: string) => {
+    async (resume: string, jd: string, isAnonymous: boolean = false) => {
       setLoading(true);
       setError(null);
 
@@ -234,7 +234,7 @@ export const useGeminiAnalyzer = (): UseGeminiAnalyzerReturn => {
         const response = await fetch("/api/analyze", {
           method: "POST",
           headers,
-          body: JSON.stringify({ resume, jd }),
+          body: JSON.stringify({ resume, jd, isAnonymous }),
         });
 
         if (!response.ok) {

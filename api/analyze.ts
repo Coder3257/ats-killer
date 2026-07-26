@@ -22,10 +22,21 @@ function generateCacheKey(resume: string, jd: string): string {
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
-    const userId = await verifyAuth(req, res);
-    if (!userId) return;
+    const isAnonymous = req.body?.isAnonymous === true;
+    let userId = null;
 
-    if (await rateLimit(userId, res, req)) return;
+    if (isAnonymous) {
+      // Key rate limit by IP address converted to a UUID
+      const ip = (req.headers["x-forwarded-for"] as string) || req.socket.remoteAddress || "127.0.0.1";
+      const hash = crypto.createHash("md5").update(ip).digest("hex");
+      userId = `${hash.slice(0, 8)}-${hash.slice(8, 12)}-${hash.slice(12, 16)}-${hash.slice(16, 20)}-${hash.slice(20, 32)}`;
+      
+      if (await rateLimit(userId, res, req)) return;
+    } else {
+      userId = await verifyAuth(req, res);
+      if (!userId) return;
+      if (await rateLimit(userId, res, req)) return;
+    }
 
     const adminClient = getSupabaseAdmin();
     if (!adminClient) {
@@ -38,43 +49,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "Missing required fields: resume and jd" });
     }
 
-    // Check if user has unlimited access (Pro subscription or Lifetime access)
-    const { data: profile } = await adminClient
-      .from("profiles")
-      .select("lifetime_access")
-      .eq("id", userId)
-      .single();
-
-    const { data: subscription } = await adminClient
-      .from("subscriptions")
-      .select("status, current_period_end")
-      .eq("user_id", userId)
-      .maybeSingle();
-
-    const hasLifetimeAccess = profile?.lifetime_access === true;
-    const hasActiveSubscription = subscription?.status === "active"
-      && new Date(subscription.current_period_end) > new Date();
-
-    const isUnlimited = hasLifetimeAccess || hasActiveSubscription;
-
+    let isUnlimited = false;
     let creditsData = null;
 
-    if (!isUnlimited) {
-      const { data: cData, error: creditsError } = await adminClient
-        .from("credits")
-        .select("amount")
-        .eq("user_id", userId)
+    if (!isAnonymous) {
+      // Check if user has unlimited access (Pro subscription or Lifetime access)
+      const { data: profile } = await adminClient
+        .from("profiles")
+        .select("lifetime_access")
+        .eq("id", userId)
         .single();
 
-      if (creditsError || !cData) {
-        console.error("CREDITS ERROR DETECTED:", creditsError, "data:", cData);
-        return res.status(402).json({ error: "No credit record found. Please purchase credits." });
-      }
+      const { data: subscription } = await adminClient
+        .from("subscriptions")
+        .select("status, current_period_end")
+        .eq("user_id", userId)
+        .maybeSingle();
 
-      if (cData.amount <= 0) {
-        return res.status(402).json({ error: "Insufficient credits. Please upgrade or purchase more credits." });
+      const hasLifetimeAccess = profile?.lifetime_access === true;
+      const hasActiveSubscription = subscription?.status === "active"
+        && new Date(subscription.current_period_end) > new Date();
+
+      isUnlimited = hasLifetimeAccess || hasActiveSubscription;
+
+      if (!isUnlimited) {
+        const { data: cData, error: creditsError } = await adminClient
+          .from("credits")
+          .select("amount")
+          .eq("user_id", userId)
+          .single();
+
+        if (creditsError || !cData) {
+          console.error("CREDITS ERROR DETECTED:", creditsError, "data:", cData);
+          return res.status(402).json({ error: "No credit record found. Please purchase credits." });
+        }
+
+        if (cData.amount <= 0) {
+          return res.status(402).json({ error: "Insufficient credits. Please upgrade or purchase more credits." });
+        }
+        creditsData = cData;
       }
-      creditsData = cData;
     }
 
     // --- BEGIN CACHING CHANGES ---
@@ -162,7 +176,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // --- END CACHING CHANGES ---
 
     // 3. Decrement user credit if not unlimited AND we actually called Gemini
-    if (geminiCalled && !isUnlimited && creditsData) {
+    if (!isAnonymous && geminiCalled && !isUnlimited && creditsData) {
       const { error: decrementError } = await adminClient
         .from("credits")
         .update({ amount: creditsData.amount - 1 })
@@ -174,50 +188,54 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // 4. Save analysis details in database
-    const { error: insertScoreError } = await adminClient
-      .from("score_history")
-      .insert({
-        user_id: userId,
-        score: data.score,
-        keyword_match_percent: data.keyword_match_percent,
-        jd_snippet: JSON.stringify(data),
-        idempotency_key: idempotencyKey || null
-      });
+    if (!isAnonymous) {
+      const { error: insertScoreError } = await adminClient
+        .from("score_history")
+        .insert({
+          user_id: userId,
+          score: data.score,
+          keyword_match_percent: data.keyword_match_percent,
+          jd_snippet: JSON.stringify(data),
+          idempotency_key: idempotencyKey || null
+        });
 
-    if (insertScoreError) {
-      if (insertScoreError.code === "23505" && idempotencyKey) {
-        console.warn(`Idempotency conflict detected (23505) for key: ${idempotencyKey}. Refunding credit.`);
-        // Restore credit if not unlimited (since it's a duplicate request)
-        if (!isUnlimited && creditsData && geminiCalled) {
-          await adminClient
-            .from("credits")
-            .update({ amount: creditsData.amount })
-            .eq("user_id", userId);
-        }
+      if (insertScoreError) {
+        if (insertScoreError.code === "23505" && idempotencyKey) {
+          console.warn(`Idempotency conflict detected (23505) for key: ${idempotencyKey}. Refunding credit.`);
+          // Restore credit if not unlimited (since it's a duplicate request)
+          if (!isUnlimited && creditsData && geminiCalled) {
+            await adminClient
+              .from("credits")
+              .update({ amount: creditsData.amount })
+              .eq("user_id", userId);
+          }
 
-        const { data: existingScore } = await adminClient
-          .from("score_history")
-          .select("jd_snippet")
-          .eq("user_id", userId)
-          .eq("idempotency_key", idempotencyKey)
-          .maybeSingle();
+          const { data: existingScore } = await adminClient
+            .from("score_history")
+            .select("jd_snippet")
+            .eq("user_id", userId)
+            .eq("idempotency_key", idempotencyKey)
+            .maybeSingle();
 
-        if (existingScore?.jd_snippet) {
-          try {
-            return res.status(200).json(JSON.parse(existingScore.jd_snippet));
-          } catch (e) {
-            // fallback
+          if (existingScore?.jd_snippet) {
+            try {
+              return res.status(200).json(JSON.parse(existingScore.jd_snippet));
+            } catch (e) {
+              // fallback
+            }
           }
         }
+        console.error("Failed to save score history:", insertScoreError);
       }
-      console.error("Failed to save score history:", insertScoreError);
     }
 
     // 5. Trigger gamification recalculation
-    try {
-      await recalculateGamification(userId);
-    } catch (gErr) {
-      console.error("Failed to recalculate gamification on scan:", gErr);
+    if (!isAnonymous) {
+      try {
+        await recalculateGamification(userId);
+      } catch (gErr) {
+        console.error("Failed to recalculate gamification on scan:", gErr);
+      }
     }
 
     // --- BEGIN CACHING CHANGES ---
