@@ -32,6 +32,7 @@ import { useAnalysisStore } from "../../shared/stores/analysisStore";
 import { supabase } from "../../shared/services/supabase/client";
 import { LoadingSequence, DiagnosticModal } from "../../components";
 import { useToast } from "../../shared/contexts/ToastContext";
+import { useAuth } from "../../shared/contexts/AuthContext";
 import { lazy } from "react";
 
 const CareerIntelligence = lazy(() => import("../career/CareerIntelligence"));
@@ -81,6 +82,7 @@ interface AnalyzerProps {
 export default function Analyzer({ onAuthRequired }: AnalyzerProps) {
   const { loading, result, error, analyze, reset, rewriteBullet } = useGeminiAnalyzer();
   const { showToast } = useToast();
+  const { user } = useAuth();
 
   const projectedScore = useMemo(() => {
     if (!result) return 0;
@@ -166,6 +168,11 @@ export default function Analyzer({ onAuthRequired }: AnalyzerProps) {
 
   // Analyze trigger
   const handleAnalyze = async () => {
+    if (!user) {
+      showToast("You have to sign in first to scan your resume.", "error");
+      onAuthRequired();
+      return;
+    }
     try {
       setRewrites({});
       setSelectedAts(null);
