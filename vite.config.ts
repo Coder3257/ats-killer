@@ -86,6 +86,21 @@ export default defineConfig(() => {
       // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              // Split lucide-react and framer-motion into separate chunks
+              if (id.includes('lucide-react')) return 'lucide-react';
+              if (id.includes('framer-motion')) return 'framer-motion';
+              // Optionally vendor chunk
+              return 'vendor';
+            }
+          }
+        }
+      }
+    }
   };
 });
 // Trigger dev server reload to import the updated API handlers
