@@ -32,6 +32,7 @@ import {
 import { useAnalysisStore } from "../../shared/stores/analysisStore";
 import { supabase } from "../../shared/services/supabase/client";
 import { LoadingSequence, DiagnosticModal } from "../../components";
+import { useToast } from "../../shared/contexts/ToastContext";
 import { lazy } from "react";
 
 const CareerIntelligence = lazy(() => import("../career/CareerIntelligence"));
@@ -59,12 +60,12 @@ function useCountUp(target: number, duration: number = 1600) {
     let currentStep = 0;
     const timer = setInterval(() => {
       currentStep++;
-      start += increment;
+      const nextVal = Math.round(increment * currentStep);
       if (currentStep >= totalSteps) {
         setCount(end);
         clearInterval(timer);
       } else {
-        setCount(Math.floor(start));
+        setCount(nextVal);
       }
     }, stepTime);
 
@@ -75,11 +76,12 @@ function useCountUp(target: number, duration: number = 1600) {
 }
 
 interface AnalyzerProps {
-  onAuthRequired?: () => void;
+  onAuthRequired: () => void;
 }
 
 export default function Analyzer({ onAuthRequired }: AnalyzerProps) {
   const { loading, result, error, analyze, reset, rewriteBullet } = useGeminiAnalyzer();
+  const { showToast } = useToast();
 
   // Shared Store State
   const resume = useAnalysisStore((state) => state.resumeInput);
@@ -90,6 +92,7 @@ export default function Analyzer({ onAuthRequired }: AnalyzerProps) {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [copiedWins, setCopiedWins] = useState(false);
   const [copiedRewrite, setCopiedRewrite] = useState(false);
+  const [copiedSummary, setCopiedSummary] = useState(false);
   const [showRewrite, setShowRewrite] = useState(false);
   const [animateBars, setAnimateBars] = useState(false);
   const [dashOffset, setDashOffset] = useState(326.7);
@@ -196,6 +199,37 @@ export default function Analyzer({ onAuthRequired }: AnalyzerProps) {
     setCopiedWins(true);
     setTimeout(() => {
       setCopiedWins(false);
+    }, 2000);
+  };
+
+  const handleCopySummary = () => {
+    if (!result) return;
+    const score = result.score || 0;
+    const rejectionReasons = (result.rejection_reasons || [])
+      .slice(0, 3)
+      .map((r) => `- ${r.title}`)
+      .join("\n");
+    const quickWins = (result.quick_wins || [])
+      .slice(0, 3)
+      .map((w) => `- ${w.title}`)
+      .join("\n");
+
+    const summaryText = `ATS Compatibility Analysis Summary
+Overall Score: ${score}%
+
+Top Rejection Risks:
+${rejectionReasons || "None identified"}
+
+Top Quick Wins:
+${quickWins || "None identified"}
+
+Optimize your resume at https://ats-killer.vercel.app`;
+
+    navigator.clipboard.writeText(summaryText);
+    showToast("Summary copied to clipboard!", "success");
+    setCopiedSummary(true);
+    setTimeout(() => {
+      setCopiedSummary(false);
     }, 2000);
   };
 
@@ -534,10 +568,29 @@ qualifications. Don't trim it — every word matters.`}
               })}
               className="bg-white border border-[#E5E0D8] rounded-3xl p-7 premium-shadow border-l-4 border-l-[#D97706] hover:border-[#D97706]/40 hover:bg-[#F5F0E8]/10 hover:-translate-y-[3px] transition-all duration-200 ease-out cursor-pointer group"
             >
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-extrabold text-[#1C1008] tracking-tight group-hover:text-[#D97706] transition-colors">
-                  ATS Compatibility Score
-                </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <h3 className="text-xl font-extrabold text-[#1C1008] tracking-tight group-hover:text-[#D97706] transition-colors">
+                    ATS Compatibility Score
+                  </h3>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCopySummary();
+                    }}
+                    className="p-2 bg-[#FAF8F5] hover:bg-[#F5F0E8] text-[#D97706] rounded-xl border border-[#E5E0D8]/60 transition-all flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-pointer"
+                  >
+                    {copiedSummary ? (
+                      <>
+                        <Check className="h-3.5 w-3.5 text-[#10B981]" /> Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5" /> Copy Summary
+                      </>
+                    )}
+                  </button>
+                </div>
                 <span className="text-[10px] font-mono text-[#D97706] font-bold group-hover:underline">Click to view diagnostics →</span>
               </div>
 
