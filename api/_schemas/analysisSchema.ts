@@ -89,15 +89,7 @@ export const SalaryIntelligenceSchema = z.object({
   reasoning: z.string(),
 });
 
-export const SkillGapItemSchema = z.object({
-  name: z.string(),
-  category: z.enum(["Already Strong", "Needs Improvement", "Critical Missing", "Learning Priority"]),
-  learning_time: z.string(),
-});
-
-export const SkillGapSchema = z.object({
-  comparison: z.array(SkillGapItemSchema),
-});
+export const SkillGapSchema = z.array(z.string());
 
 export const RoadmapStepSchema = z.object({
   timeframe: z.enum(["Immediate Fixes", "This Week", "This Month", "Next 90 Days", "Long-term"]),

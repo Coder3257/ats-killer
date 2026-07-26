@@ -98,19 +98,7 @@ export interface SalaryIntelligence {
     reasoning: string;
 }
 
-export interface SkillGapItem {
-    name: string;
-    category:
-    | "Already Strong"
-    | "Needs Improvement"
-    | "Critical Missing"
-    | "Learning Priority";
-    learning_time: string;
-}
-
-export interface SkillGap {
-    comparison: SkillGapItem[];
-}
+export type SkillGap = string[];
 
 export interface RoadmapStep {
     timeframe:

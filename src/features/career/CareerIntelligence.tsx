@@ -21,6 +21,7 @@ import {
 import { AnalysisResult } from "../../hooks/useGeminiAnalyzer";
 import DiagnosticModal from "../../components/DiagnosticModal";
 import { useToast } from "../../shared/contexts/ToastContext";
+import { SKILL_RESOURCE_MAP } from "../../../api/_data/resource-links";
 
 
 interface CareerIntelligenceProps {
@@ -61,9 +62,7 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
     reasoning: "Salary is calculated based on current market trends for this skill level.",
   };
 
-  const skillGapData = skill_gap || {
-    comparison: [],
-  };
+  const skillGapData = skill_gap || [];
 
   const roadmapData = career_roadmap || {
     steps: [],
@@ -83,20 +82,14 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
   const [activeDiagnosticDetail, setActiveDiagnosticDetail] = useState<any>(null);
 
 
-  // State to filter skill gap categories
-  const [activeSkillTab, setActiveSkillTab] = useState<"All" | "Already Strong" | "Needs Improvement" | "Critical Missing" | "Learning Priority">("All");
+  // State to filter skill gap categories - now we just show all skills since categorization is removed
+  const [activeSkillTab, setActiveSkillTab] = useState<"All">("All");
 
   const skillCategories = [
-    { label: "All", count: skillGapData.comparison.length },
-    { label: "Already Strong", count: skillGapData.comparison.filter((s) => s.category === "Already Strong").length },
-    { label: "Needs Improvement", count: skillGapData.comparison.filter((s) => s.category === "Needs Improvement").length },
-    { label: "Critical Missing", count: skillGapData.comparison.filter((s) => s.category === "Critical Missing").length },
-    { label: "Learning Priority", count: skillGapData.comparison.filter((s) => s.category === "Learning Priority").length },
+    { label: "All", count: skillGapData.length },
   ];
 
-  const filteredSkills = activeSkillTab === "All"
-    ? skillGapData.comparison
-    : skillGapData.comparison.filter((s) => s.category === activeSkillTab);
+  const filteredSkills = skillGapData;
 
   return (
     <div className="border-t border-[#E5E0D8] pt-12 mt-12 px-4 sm:px-6 space-y-12">
@@ -540,48 +533,13 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
           </span>
         </div>
 
-        {/* Categories Tab Selector */}
-        <div className="flex flex-wrap gap-1.5 mb-6 border-b border-[#E5E0D8]/40 pb-3">
-          {skillCategories.map((cat) => (
-            <button
-              key={cat.label}
-              onClick={() => setActiveSkillTab(cat.label as any)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                activeSkillTab === cat.label
-                  ? "bg-[#1C1008] text-white"
-                  : "bg-[#FAF8F5] text-[#4E453F] hover:bg-[#F5F0E8] border border-[#E5E0D8]/60"
-              }`}
-            >
-              {cat.label} <span className="font-mono text-[10px] opacity-70 ml-0.5">({cat.count})</span>
-            </button>
-          ))}
-        </div>
-
         {/* Skill comparison cards list */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           <AnimatePresence mode="popLayout">
             {filteredSkills.map((skill) => {
-              let tagStyle = "";
-              let iconElement = null;
-              
-              switch (skill.category) {
-                case "Already Strong":
-                  tagStyle = "bg-[#D1FAE5] text-[#065F46] border-[#10B981]/20";
-                  iconElement = <CheckCircle2 className="h-3.5 w-3.5 text-[#10B981] shrink-0" />;
-                  break;
-                case "Needs Improvement":
-                  tagStyle = "bg-[#FEF3C7] text-[#92400E] border-[#D97706]/20";
-                  iconElement = <AlertTriangle className="h-3.5 w-3.5 text-[#D97706] shrink-0" />;
-                  break;
-                case "Critical Missing":
-                  tagStyle = "bg-[#FEE2E2] text-[#991B1B] border-[#EF4444]/20";
-                  iconElement = <XCircle className="h-3.5 w-3.5 text-[#EF4444] shrink-0" />;
-                  break;
-                case "Learning Priority":
-                  tagStyle = "bg-purple-50 text-purple-700 border-purple-200";
-                  iconElement = <Target className="h-3.5 w-3.5 text-purple-600 shrink-0" />;
-                  break;
-              }
+              // For now, all skills are treated as strings since we removed categorization
+              const skillName = typeof skill === 'string' ? skill : skill.name || '';
+              const resource = SKILL_RESOURCE_MAP[skillName];
 
               return (
                 <motion.div
@@ -590,37 +548,55 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3 }}
-                  key={skill.name}
+                  key={skillName}
                   onClick={() => setActiveDiagnosticDetail({
-                    title: `Skill Gap Diagnostic: ${skill.name}`,
-                    description: `This competency is flagged as "${skill.category}".`,
+                    title: `Skill Gap Diagnostic: ${skillName}`,
+                    description: resource
+                      ? `Learn ${skillName} with this recommended resource`
+                      : `This skill is identified as a gap based on the job requirements.`,
                     details: [
-                      `Skill status: ${skill.category}`,
-                      `Estimated timeframe to bridge: ${skill.learning_time || "0 days"}`
+                      `Skill: ${skillName}`,
+                      resource ? `Resource: ${resource.title}` : `Status: Identified as missing from resume`,
+                      resource ? `URL: ${resource.url}` : ''
                     ],
                     actionItems: [
-                      `Review target job requirements referencing ${skill.name}.`,
-                      "Practice relative systems engineering mock loops."
+                      resource
+                        ? `Learn ${skillName} using: ${resource.title}`
+                        : `Learn and practice ${skillName} to match job requirements.`,
+                      "Consider adding relevant projects or certifications to your resume."
                     ]
                   })}
-                  className={`border rounded-2xl p-4 flex flex-col justify-between bg-[#FAF8F5] ${tagStyle} transition-all cursor-pointer hover:scale-[1.02]`}
+                  className="border rounded-2xl p-4 flex flex-col justify-between bg-[#FAF8F5] bg-[#FEE2E2] text-[#991B1B] border-[#EF4444]/20 transition-all cursor-pointer hover:scale-[1.02]"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="space-y-1">
                       <span className="text-xs font-mono font-bold tracking-wider uppercase opacity-65">
-                        {skill.category}
+                        Skill Gap
                       </span>
                       <p className="text-sm font-extrabold text-[#1C1008] leading-tight">
-                        {skill.name}
+                        {skillName}
                       </p>
                     </div>
-                    {iconElement}
+                    <XCircle className="h-3.5 w-3.5 text-[#EF4444] shrink-0" />
                   </div>
 
-                  {skill.learning_time && skill.learning_time !== "0 days" && skill.learning_time !== "0" && (
+                  {resource && (
+                    <div className="mt-3 pt-2 border-t border-black/5">
+                      <a
+                        href={resource.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-[10px] font-mono font-bold text-blue-600 hover:text-blue-800 underline"
+                      >
+                        Learn: {resource.title}
+                      </a>
+                    </div>
+                  )}
+
+                  {!resource && (
                     <div className="mt-4 pt-2 border-t border-black/5 flex items-center gap-1 text-[10px] font-mono font-bold">
                       <Clock className="h-3 w-3 shrink-0" />
-                      <span>Learn Time: {skill.learning_time}</span>
+                      <span>Learn Time: Variable</span>
                     </div>
                   )}
                 </motion.div>
@@ -633,7 +609,7 @@ export default function CareerIntelligence({ result, animate }: CareerIntelligen
                 animate={{ opacity: 1 }}
                 className="col-span-full py-8 text-center text-xs text-[#4E453F]/60 italic font-semibold"
               >
-                No skills found matching this category.
+                No skill gaps identified.
               </motion.div>
             )}
           </AnimatePresence>

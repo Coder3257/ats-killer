@@ -41,7 +41,7 @@ ENUM AND SIZE CONSTRAINTS (VERY IMPORTANT):
 - "ats_simulation" must contain exactly 5 objects for these system names in this exact order: "Workday", "Greenhouse", "Lever", "Ashby", "Taleo". For each, "status" must be "PASS" or "FAIL".
 - "resume_heatmap" must contain exactly 6 objects for these sections in this exact order: "Summary", "Experience", "Projects", "Skills", "Education", "Certifications". For each, "grade" must be "Excellent", "Good", "Average", "Weak".
 - "emotional_impression" must contain exactly 7 objects for these attributes in this exact order: "Confident", "Leadership", "Technical Depth", "Ownership", "Innovation", "Communication", "Professionalism".
-- "skill_gap.comparison" items must use "category" from: "Already Strong", "Needs Improvement", "Critical Missing", "Learning Priority".
+- "skill_gap" must be an array of strings representing skill names (e.g., "Docker", "Kubernetes").
 - "career_roadmap.steps" items must use "timeframe" from: "Immediate Fixes", "This Week", "This Month", "Next 90 Days", "Long-term".
 - "application_tracker" items must use "status" from: "Wishlist", "Applied", "OA", "Interview", "Offer", "Rejected", "Accepted".
 - "job_matches" items must use "workplace_type" from: "Remote", "Hybrid", "Onsite".
@@ -242,15 +242,7 @@ JSON TEMPLATE:
     "percentile": 85,
     "reasoning": "Matching top-tier frontend skill demands."
   },
-  "skill_gap": {
-    "comparison": [
-      {
-        "name": "Docker",
-        "category": "Critical Missing", // Must be exactly one of: "Already Strong", "Needs Improvement", "Critical Missing", "Learning Priority"
-        "learning_time": "3 days"
-      }
-    ]
-  },
+  "skill_gap": ["Docker", "Kubernetes"],
   "career_roadmap": {
     "steps": [
       {
