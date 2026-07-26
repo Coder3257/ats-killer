@@ -74,9 +74,14 @@ export default function Hero() {
                 </span>
               </h1>
               
-              <p className="text-lg text-[#1C1008]/75 max-w-xl font-sans leading-relaxed">
-                70% of resumes are filtered out by robotic Applicant Tracking Systems (ATS) before they ever reach a human recruiter. ATS Killer optimizes your keywords and bullet points in real-time, instantly elevating you to the top 2% of the applicant stack.
-              </p>
+              <div className="space-y-3 max-w-xl pt-2">
+                <h2 className="text-xl font-display font-extrabold text-[#1C1008] leading-snug">
+                  Ever wonder why you never hear back?
+                </h2>
+                <p className="text-sm md:text-base text-[#1C1008]/75 font-sans leading-relaxed">
+                  Your resume isn't bad — it's invisible. 75% of resumes never even reach a human, filtered out by ATS (Applicant Tracking System) bots that are supposed to help hiring. ATS Killer shows you exactly why: your real compatibility score, the line-by-line reasons you're getting ghosted, and the fastest fixes to flip it — before you hit submit again.
+                </p>
+              </div>
             </div>
 
             {/* CTAs */}
