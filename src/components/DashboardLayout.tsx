@@ -86,6 +86,57 @@ export default function DashboardLayout({ onLogout }: DashboardLayoutProps) {
     }
   }, [user?.id, loadAnalysisHistory, loadApplications]);
 
+  // Compute user streak and weekly activity
+  const currentStreak = useMemo(() => {
+    if (!analysisHistory || analysisHistory.length === 0) return 0;
+    const scanDates = new Set<string>();
+    analysisHistory.forEach((entry) => {
+      try {
+        if (entry.created_at) {
+          const dateStr = new Date(entry.created_at).toLocaleDateString("en-CA");
+          scanDates.add(dateStr);
+        }
+      } catch (e) {}
+    });
+
+    const today = new Date();
+    const todayStr = today.toLocaleDateString("en-CA");
+
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toLocaleDateString("en-CA");
+
+    if (!scanDates.has(todayStr) && !scanDates.has(yesterdayStr)) {
+      return 0;
+    }
+
+    const currentDay = scanDates.has(todayStr) ? today : yesterday;
+    let streak = 0;
+
+    while (true) {
+      const currentDayStr = currentDay.toLocaleDateString("en-CA");
+      if (scanDates.has(currentDayStr)) {
+        streak++;
+        currentDay.setDate(currentDay.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }, [analysisHistory]);
+
+  const weeklyScans = useMemo(() => {
+    if (!analysisHistory || analysisHistory.length === 0) return 0;
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    return analysisHistory.filter((entry) => {
+      try {
+        return entry.created_at && new Date(entry.created_at).getTime() >= sevenDaysAgo;
+      } catch (e) {
+        return false;
+      }
+    }).length;
+  }, [analysisHistory]);
+
   useEffect(() => {
     if (profile) {
       setProfileName(profile.full_name || "");
@@ -199,6 +250,12 @@ export default function DashboardLayout({ onLogout }: DashboardLayoutProps) {
                 </span>
                 <span className="bg-[#FAF8F5] border border-[#E5E0D8]/60 px-2 py-0.5 rounded-lg flex items-center gap-1">
                   💼 <span className="text-[#1C1008]">{applications.length}</span> Applications
+                </span>
+                <span className="bg-[#FAF8F5] border border-[#E5E0D8]/60 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                  🔥 <span className="text-[#1C1008]">{currentStreak}d</span> Streak
+                </span>
+                <span className="bg-[#FAF8F5] border border-[#E5E0D8]/60 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                  📅 <span className="text-[#1C1008]">{weeklyScans}</span> This Week
                 </span>
               </div>
             </div>
