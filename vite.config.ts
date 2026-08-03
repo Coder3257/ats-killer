@@ -91,6 +91,10 @@ export default defineConfig(() => {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
+              // Leave the file-parsing libs alone so Rollup can keep them in the
+              // dynamic-import chunks created by src/features/analyzer/parseFile.ts.
+              // Returning 'vendor' here would pull them into the eager bundle.
+              if (id.includes('pdfjs-dist') || id.includes('mammoth')) return;
               // Split lucide-react and framer-motion into separate chunks
               if (id.includes('lucide-react')) return 'lucide-react';
               if (id.includes('framer-motion')) return 'framer-motion';

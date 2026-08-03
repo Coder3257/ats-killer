@@ -21,6 +21,9 @@ import {
   Activity,
   UserCheck,
   TrendingUp,
+  Upload,
+  X,
+  Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -77,6 +80,93 @@ function useCountUp(target: number, duration: number = 1600) {
 
 interface AnalyzerProps {
   onAuthRequired: () => void;
+}
+
+// Upload button + drag-drop zone. Coexists with paste: uploading fills the
+// textarea, and the textarea stays editable afterwards.
+function FileUploadZone({
+  inputRef,
+  parsing,
+  fileName,
+  onFile,
+  onRemove,
+}: {
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  parsing: boolean;
+  fileName: string;
+  onFile: (f: File) => void;
+  onRemove: () => void;
+}) {
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const f = e.dataTransfer.files?.[0];
+    if (f) onFile(f);
+  };
+
+  return (
+    <div className="mb-3">
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".pdf,.docx,.txt"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onFile(f);
+          e.target.value = "";
+        }}
+      />
+
+      {fileName ? (
+        <div className="flex items-center gap-2 bg-[#F5F0E8] border border-[#E5E0D8] rounded-xl px-3 py-2.5">
+          <FileText className="h-3.5 w-3.5 text-[#D97706] shrink-0" />
+          <span className="text-xs font-semibold text-[#1C1008] truncate flex-1 min-w-0">
+            {fileName}
+          </span>
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label={`Remove ${fileName}`}
+            className="text-[#4E453F]/60 hover:text-[#EF4444] transition-colors shrink-0 cursor-pointer p-1 -m-1"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragOver(true);
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          disabled={parsing}
+          className={`w-full border-2 border-dashed rounded-xl px-3 py-2.5 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:cursor-wait ${
+            dragOver
+              ? "border-[#D97706] bg-[#FEF3C7]/40"
+              : "border-[#E5E0D8] hover:border-[#D97706]/50 hover:bg-[#FEF3C7]/20"
+          }`}
+        >
+          {parsing ? (
+            <Loader2 className="h-3.5 w-3.5 text-[#D97706] animate-spin shrink-0" />
+          ) : (
+            <Upload className="h-3.5 w-3.5 text-[#D97706] shrink-0" />
+          )}
+          <span className="text-xs font-semibold text-[#4E453F]/70 text-center">
+            {parsing ? "Extracting text…" : "Upload file"}
+            {!parsing && (
+              <span className="hidden sm:inline"> or drag &amp; drop — PDF, DOCX, TXT</span>
+            )}
+          </span>
+        </button>
+      )}
+    </div>
+  );
 }
 
 export default function Analyzer({ onAuthRequired }: AnalyzerProps) {
@@ -140,6 +230,14 @@ export default function Analyzer({ onAuthRequired }: AnalyzerProps) {
   const resultsRef = useRef<HTMLDivElement>(null);
   const inputsRef = useRef<HTMLDivElement>(null);
 
+  // File upload state (resume + JD)
+  const resumeFileRef = useRef<HTMLInputElement>(null);
+  const jdFileRef = useRef<HTMLInputElement>(null);
+  const [resumeFileName, setResumeFileName] = useState("");
+  const [jdFileName, setJdFileName] = useState("");
+  const [resumeParsing, setResumeParsing] = useState(false);
+  const [jdParsing, setJdParsing] = useState(false);
+
   // Animate progress bars and circular score ring when result becomes available
   useEffect(() => {
     if (result) {
@@ -177,12 +275,30 @@ export default function Analyzer({ onAuthRequired }: AnalyzerProps) {
     }
   };
 
+  const handleFileUpload = async (file: File, target: 'resume' | 'jd') => {
+    const setParsing = target === 'resume' ? setResumeParsing : setJdParsing;
+    const setFileName = target === 'resume' ? setResumeFileName : setJdFileName;
+    const setValue = target === 'resume' ? setResume : setJd;
+    setParsing(true);
+    try {
+      const { parseFile } = await import('./parseFile');
+      setValue(await parseFile(file));
+      setFileName(file.name);
+    } catch (err: any) {
+      showToast(err?.message || 'Failed to parse file.', 'error');
+    } finally {
+      setParsing(false);
+    }
+  };
+
   // Reset trigger
   const handleReset = () => {
     reset();
     setShowRewrite(false);
     setSelectedAts(null);
     setRewrites({});
+    setResumeFileName('');
+    setJdFileName('');
     setTimeout(() => {
       inputsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
@@ -468,6 +584,14 @@ Optimize your resume at https://ats-killer.vercel.app`;
                   </span>
                 </div>
 
+                <FileUploadZone
+                  inputRef={resumeFileRef}
+                  parsing={resumeParsing}
+                  fileName={resumeFileName}
+                  onFile={(f) => handleFileUpload(f, 'resume')}
+                  onRemove={() => { setResume(''); setResumeFileName(''); }}
+                />
+
                 <textarea
                   value={resume}
                   onChange={(e) => setResume(e.target.value)}
@@ -496,6 +620,14 @@ IncludeThank you for choosing <strong>ATS Killer</strong>. Since our Service uti
                     {getWordCount(jd)} words
                   </span>
                 </div>
+
+                <FileUploadZone
+                  inputRef={jdFileRef}
+                  parsing={jdParsing}
+                  fileName={jdFileName}
+                  onFile={(f) => handleFileUpload(f, 'jd')}
+                  onRemove={() => { setJd(''); setJdFileName(''); }}
+                />
 
                 <textarea
                   value={jd}
